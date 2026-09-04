@@ -1,0 +1,43 @@
+<div class="app-layout" [class.no-sidebar]="!showSidebar">
+  
+  <!-- Sidebar -->
+  <aside class="sidebar" *ngIf="showSidebar">
+    <div class="sidebar-header">
+      <h2>Mapping System</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a routerLink="/evaluators" routerLinkActive="active">Home</a></li>
+        <li><a routerLink="/cohorts" routerLinkActive="active">Cohorts</a></li>
+        <li><a routerLink="/evaluators" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Evaluators</a></li>
+        <!-- Mapping doesn't need a direct nav link unless it has a default, usually accessed via Cohorts -->
+        <li><a routerLink="/reports" routerLinkActive="active">Reports</a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="#" (click)="logout(); $event.preventDefault()">Logout</a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-wrapper">
+    <!-- Header -->
+    <header class="top-header" *ngIf="showSidebar">
+      <div class="header-left">
+        <h1>Evaluator Mapping System</h1>
+      </div>
+      <div class="header-right">
+        <div class="user-info" *ngIf="currentUser">
+          <span class="user-name">{{ currentUser.name }}</span>
+          <span class="user-role">{{ currentUser.role }}</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="content-area">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+</div>

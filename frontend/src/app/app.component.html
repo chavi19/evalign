@@ -1,0 +1,51 @@
+<div class="app-layout" [class.no-sidebar]="!showSidebar">
+  
+  <!-- Sidebar -->
+  <aside class="sidebar" *ngIf="showSidebar">
+    <div class="sidebar-header">
+      <span class="logo-icon">&#10022;</span>
+      <h2>Evaluator Mapping System</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a routerLink="/evaluators" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><span class="dot">&bull;</span> Home</a></li>
+        <li><a routerLink="/cohorts" routerLinkActive="active"><span class="dot">&bull;</span> Cohorts</a></li>
+        <li><a routerLink="/evaluators" routerLinkActive="active"><span class="dot">&bull;</span> Evaluators</a></li>
+        <li><a routerLink="/mapping/1" routerLinkActive="active"><span class="dot">&bull;</span> Mapping</a></li>
+        <li><a routerLink="/reports" routerLinkActive="active"><span class="dot">&bull;</span> Reports</a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="logout()">
+        <span>&larr;</span> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <header class="top-header" *ngIf="showSidebar">
+      <div class="header-left">
+        <!-- Breadcrumb or blank -->
+      </div>
+      <div class="header-right">
+        <div class="user-profile">
+          <div class="user-details">
+            <span class="user-name">{{ currentUser?.name || 'Vijayalakshmi J. (POC)' }}</span>
+            <span class="user-role">{{ currentUser?.role || 'Batch Owner' }}</span>
+          </div>
+          <div class="avatar-circle">
+            {{ (currentUser?.name ? currentUser!.name.substring(0,2) : 'VJ') | uppercase }}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content Router -->
+    <main class="content-area">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+</div>

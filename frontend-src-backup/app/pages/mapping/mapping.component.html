@@ -1,0 +1,67 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Evaluator Mapping &mdash; {{ cohort?.name || 'Loading...' }}</h2>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="autoMap()">Auto-Map Evaluators</button>
+    </div>
+  </div>
+
+  <div class="tabs-container">
+    <div class="tab" [class.active]="activeTab === 'Interim'" (click)="setTab('Interim')">
+      Interim Interview
+      <span class="tab-badge coral">!</span>
+    </div>
+    <div class="tab" [class.active]="activeTab === 'Final'" (click)="setTab('Final')">
+      Final Interview
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Attempts</th>
+          <th>Suggested Evaluator</th>
+          <th>{{ activeTab === 'Final' ? 'Interim Evaluator' : 'Previous Evaluator' }}</th>
+          <th>Availability</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let mapping of mappings">
+          <td class="font-medium">{{ mapping.candidateName }}</td>
+          <td>{{ mapping.attempts }}</td>
+          <td>
+            <select [(ngModel)]="mapping.evaluatorId" class="evaluator-select">
+              <option [ngValue]="undefined">-- Select --</option>
+              <option *ngFor="let ev of availableEvaluators" [value]="ev.id">{{ ev.name }}</option>
+            </select>
+            <div *ngIf="mapping.evaluatorId" class="validation-msg" [ngClass]="getValidationClass(mapping)">
+              {{ getValidationMessage(mapping) }}
+            </div>
+          </td>
+          <td class="text-muted">
+            <span *ngIf="mapping.previousEvaluatorName">{{ mapping.previousEvaluatorName }} 🔒</span>
+            <span *ngIf="!mapping.previousEvaluatorName">None</span>
+          </td>
+          <td>
+            <span class="badge badge-green" *ngIf="mapping.isAvailable">Available</span>
+            <span class="badge badge-red" *ngIf="!mapping.isAvailable">Unavailable</span>
+          </td>
+          <td class="actions-cell">
+            <button class="btn-success" (click)="confirmMapping(mapping)">Confirm</button>
+            <button class="btn-teal" (click)="reassign(mapping)">Reassign</button>
+          </td>
+        </tr>
+        <tr *ngIf="mappings.length === 0">
+          <td colspan="6" class="text-center empty-state">No candidates found for this round.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-note">
+    <p><strong>Note:</strong> Constraint enforced automatically: an evaluator who conducted a candidate's Interim Interview is excluded from that candidate's Final Interview; each new Final attempt requires a fresh evaluator.</p>
+  </div>
+</div>

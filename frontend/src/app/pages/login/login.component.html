@@ -1,0 +1,60 @@
+<div class="login-page">
+  <div class="login-left">
+    <div class="branding">
+      <div class="logo-title">
+        <span class="logo-icon">&#10022;</span>
+        <h1>Evaluator Mapping System</h1>
+      </div>
+      <p class="tagline">Plan interim & final interview evaluators without the back-and-forth.</p>
+    </div>
+
+    <div class="feature-boxes">
+      <div class="feature-box">
+        <h3>Upload Evaluators</h3>
+        <p>Excel &rarr; Auto email &rarr; Accept/Deny</p>
+      </div>
+      <div class="feature-box">
+        <h3>Map Evaluators</h3>
+        <p>No evaluator repeats Interim &rarr; Final</p>
+      </div>
+      <div class="feature-box">
+        <h3>Track Status</h3>
+        <p>Available &bull; Assigned &bull; Denied</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-card">
+      <h2>Batch Owner Login</h2>
+      <p class="sub-text">Sign in with your Cognizant credentials</p>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="email">Email / Associate ID</label>
+          <input type="email" id="email" formControlName="email" placeholder="admin@example.com">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" formControlName="password" placeholder="admin123">
+        </div>
+
+        <div *ngIf="error" class="error-banner">
+          {{ error }}
+        </div>
+
+        <div class="forgot-row">
+          <a href="#" (click)="$event.preventDefault()">Forgot password?</a>
+        </div>
+
+        <button type="submit" [disabled]="loginForm.invalid || loading" class="btn-login">
+          <span *ngIf="!loading">LOG IN</span>
+          <span *ngIf="loading">Logging in...</span>
+        </button>
+
+        <p class="restricted-text">Access is restricted to registered Batch Owners / POCs</p>
+      </form>
+    </div>
+  </div>
+</div>

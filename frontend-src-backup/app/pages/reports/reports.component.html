@@ -1,0 +1,54 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Mapping Audit Report</h2>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="exportCsv()">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="filters-container">
+    <select [(ngModel)]="filters.cohortId" (ngModelChange)="onFilterChange()" class="filter-select">
+      <option value="All">All Cohorts</option>
+      <option *ngFor="let c of cohorts" [value]="c.id">{{ c.name }}</option>
+    </select>
+    
+    <select [(ngModel)]="filters.stage" (ngModelChange)="onFilterChange()" class="filter-select">
+      <option value="All">All Stages</option>
+      <option value="Interim">Interim</option>
+      <option value="Final">Final</option>
+    </select>
+
+    <input type="date" [(ngModel)]="filters.startDate" (ngModelChange)="onFilterChange()" class="filter-input" placeholder="Start Date">
+    <input type="date" [(ngModel)]="filters.endDate" (ngModelChange)="onFilterChange()" class="filter-input" placeholder="End Date">
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Evaluator</th>
+          <th>Cohort</th>
+          <th>Stage</th>
+          <th>Attempt</th>
+          <th>Mapped By</th>
+          <th>Mapped At</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of reports">
+          <td class="font-medium">{{ r.candidate }}</td>
+          <td>{{ r.evaluator }}</td>
+          <td>{{ r.cohort }}</td>
+          <td>{{ r.stage }}</td>
+          <td>{{ r.attempt }}</td>
+          <td>{{ r.mappedBy }}</td>
+          <td>{{ r.mappedAt | date:'mediumDate' }}</td>
+        </tr>
+        <tr *ngIf="reports.length === 0">
+          <td colspan="7" class="text-center empty-state">No reports found matching filters.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

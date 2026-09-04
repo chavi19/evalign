@@ -1,0 +1,109 @@
+<div class="page-container">
+  <div *ngIf="notification" class="notification-bar" [ngClass]="notification.type">
+    {{ notification.message }}
+  </div>
+
+  <div class="page-header">
+    <div class="title-section">
+      <h2>Evaluator Mapping &mdash; {{ cohort?.cohortName || 'Loading...' }} ({{ cohort?.batchCode }})</h2>
+    </div>
+    <div class="header-actions">
+      <button class="btn-automap" (click)="autoMap()" [disabled]="loading">
+        <span *ngIf="!loading">&#9881; Auto-Map Evaluators</span>
+        <span *ngIf="loading">Auto-Mapping...</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="tabs-container">
+    <button class="tab-btn" [class.active]="activeTab === 'INTERIM'" (click)="setTab('INTERIM')">
+      Interim Interview
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'FINAL'" (click)="setTab('FINAL')">
+      Final Interview
+    </button>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Attempt</th>
+          <th>Suggested Evaluator</th>
+          <th>Interim Evaluator (locked)</th>
+          <th>Availability</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of tableRows">
+          <td class="font-semibold">{{ row.candidateName }}</td>
+          <td>
+            <span class="attempt-badge">{{ row.attemptLabel }}</span>
+          </td>
+          <td>
+            <!-- View Mode -->
+            <div *ngIf="!row.isEditing && row.evaluatorName" class="evaluator-display">
+              <span class="eval-name">{{ row.evaluatorName }}</span>
+            </div>
+
+            <!-- Edit / Dropdown Mode -->
+            <div *ngIf="row.isEditing || !row.evaluatorName" class="evaluator-select-wrapper">
+              <select class="evaluator-select" (change)="onEvaluatorSelected(row, $any($event.target).value)" [value]="row.evaluatorId || ''">
+                <option value="" disabled selected>-- Select Evaluator --</option>
+                <option *ngFor="let ev of shortlistedEvaluators" [value]="ev.evaluatorId">
+                  {{ ev.name }} ({{ ev.vertical }} - {{ ev.availabilityStatus }})
+                </option>
+              </select>
+            </div>
+          </td>
+          <td>
+            <span class="locked-eval" *ngIf="row.interimEvaluatorName">
+              {{ row.interimEvaluatorName }}
+            </span>
+            <span class="text-muted" *ngIf="!row.interimEvaluatorName">&mdash;</span>
+          </td>
+          <td>
+            <!-- Warning / Error status -->
+            <div *ngIf="row.ruleWarning" class="status-warning">
+              <span class="icon">&times;</span> {{ row.ruleWarning }}
+            </div>
+            <!-- Available status -->
+            <div *ngIf="!row.ruleWarning && row.evaluatorId" class="status-available">
+              <span class="icon">&check;</span> Available
+            </div>
+            <!-- Unassigned -->
+            <div *ngIf="!row.evaluatorId" class="text-muted">
+              Unassigned
+            </div>
+          </td>
+          <td class="action-cell">
+            <div *ngIf="row.status === 'CONFIRMED'" class="confirmed-tag">
+              &check; Confirmed
+            </div>
+            <div *ngIf="row.status !== 'CONFIRMED'" class="btn-group">
+              <button class="btn-confirm" 
+                      (click)="confirmMapping(row)"
+                      [disabled]="!row.evaluatorId || !!row.ruleWarning"
+                      title="Confirm Mapping">
+                Confirm
+              </button>
+              <button class="btn-reassign" (click)="enableReassign(row)" *ngIf="!row.isEditing && row.evaluatorId">
+                Reassign
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="tableRows.length === 0 && !loading">
+          <td colspan="6" class="text-center empty-state">No candidates found in this cohort.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-banner">
+    <span class="info-icon">&Delta;</span>
+    <span>Constraint enforced automatically: an evaluator who conducted a candidate's Interim interview is excluded from that candidate's Final interview; each new Final attempt requires a fresh evaluator.</span>
+  </div>
+</div>

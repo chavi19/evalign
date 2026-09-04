@@ -1,0 +1,115 @@
+:host {
+  display: block;
+  height: 100vh;
+  width: 100%;
+}
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  background-color: #f4f6f8;
+}
+
+.app-layout.no-sidebar {
+  display: block;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #2c3e6b;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 0;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-nav li a {
+  display: block;
+  padding: 12px 20px;
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.sidebar-nav li a:hover, .sidebar-nav li a.active {
+  background-color: rgba(255,255,255,0.1);
+  color: white;
+  border-left: 4px solid #3498db;
+}
+
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-footer a {
+  color: #e74c3c;
+  text-decoration: none;
+}
+
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.top-header {
+  height: 60px;
+  background-color: white;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.header-left h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.header-right .user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.user-role {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f9fafc;
+}
