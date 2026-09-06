@@ -3,10 +3,35 @@
     {{ notification.message }}
   </div>
 
+  <!-- Metric Overview Cards -->
+  <div class="overview-cards">
+    <div class="metric-card">
+      <div class="metric-info">
+        <span class="metric-label">Total Evaluators</span>
+        <span class="metric-value">{{ totalEvaluatorsCount }}</span>
+      </div>
+      <div class="metric-badge badge-blue">Pool</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-info">
+        <span class="metric-label">Available Evaluators</span>
+        <span class="metric-value text-green">{{ availableEvaluatorsCount }}</span>
+      </div>
+      <div class="metric-badge badge-green">Ready</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-info">
+        <span class="metric-label">Active Cohorts</span>
+        <span class="metric-value">{{ activeCohortsCount }}</span>
+      </div>
+      <div class="metric-badge badge-orange">In Training</div>
+    </div>
+  </div>
+
   <div class="page-header">
     <div class="title-section">
-      <h2>Evaluator Pool</h2>
-      <p class="subtitle">Upload the evaluator sheet, check availability, and shortlist evaluators for cohort mapping.</p>
+      <h2>Evaluator Pool & Dashboard</h2>
+      <p class="subtitle">Upload evaluator roster, manage availability status, and shortlist evaluators for cohorts.</p>
     </div>
     <div class="header-actions">
       <label class="btn-primary upload-btn">
@@ -98,11 +123,11 @@
 <div class="modal-overlay" *ngIf="showCohortModal">
   <div class="modal">
     <div class="modal-header">
-      <h3>Add Evaluator to Cohort</h3>
+      <h3>Add Evaluator to Cohort Shortlist</h3>
       <button class="close-btn" (click)="closeCohortModal()">&times;</button>
     </div>
     <div class="modal-body" *ngIf="selectedEvaluatorForCohort">
-      <p>Assign <strong>{{ selectedEvaluatorForCohort.name }}</strong> ({{ selectedEvaluatorForCohort.empId }}) to a cohort shortlist:</p>
+      <p>Assign <strong>{{ selectedEvaluatorForCohort.name }}</strong> ({{ selectedEvaluatorForCohort.empId }}) to cohort shortlist:</p>
       <div class="form-group" style="margin-top: 15px;">
         <label>Select Cohort</label>
         <select [(ngModel)]="selectedCohortId" class="filter-select" style="width: 100%;">
@@ -114,7 +139,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" (click)="closeCohortModal()">Cancel</button>
-      <button class="btn-primary" (click)="assignToCohort()">Add to Cohort</button>
+      <button class="btn-primary" (click)="assignToCohort()">Add to Shortlist</button>
     </div>
   </div>
 </div>

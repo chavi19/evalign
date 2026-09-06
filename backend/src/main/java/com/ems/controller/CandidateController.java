@@ -3,6 +3,7 @@ package com.ems.controller;
 import com.ems.dto.CandidateDTO;
 import com.ems.service.CandidateService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,13 +23,13 @@ public class CandidateController {
 
     @PostMapping("/candidates")
     public ResponseEntity<CandidateDTO> createCandidate(@RequestBody CandidateDTO dto) {
-        return ResponseEntity.ok(candidateService.createCandidate(dto));
+        CandidateDTO created = candidateService.createCandidate(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/candidates/{id}")
     public ResponseEntity<CandidateDTO> updateCandidate(@PathVariable Long id, @RequestBody CandidateDTO dto) {
-        CandidateDTO updated = candidateService.updateCandidate(id, dto);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+        return ResponseEntity.ok(candidateService.updateCandidate(id, dto));
     }
 
     @DeleteMapping("/candidates/{id}")

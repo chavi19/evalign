@@ -2,9 +2,11 @@ package com.ems.service;
 
 import com.ems.dto.EvaluatorDTO;
 import com.ems.entity.Evaluator;
+import com.ems.exception.ResourceNotFoundException;
 import com.ems.repository.EvaluatorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,26 +21,36 @@ public class EvaluatorService {
     public List<EvaluatorDTO> getEvaluators(String vertical, String domain, String availabilityStatus) {
         Stream<Evaluator> stream = evaluatorRepository.findAll().stream();
         
-        if (vertical != null && !vertical.isEmpty()) {
-            stream = stream.filter(e -> vertical.equals(e.getVertical()));
+        if (vertical != null && !vertical.isEmpty() && !"All".equalsIgnoreCase(vertical)) {
+            stream = stream.filter(e -> vertical.equalsIgnoreCase(e.getVertical()));
         }
-        if (domain != null && !domain.isEmpty()) {
-            stream = stream.filter(e -> domain.equals(e.getDomain()));
+        if (domain != null && !domain.isEmpty() && !"All".equalsIgnoreCase(domain)) {
+            stream = stream.filter(e -> domain.equalsIgnoreCase(e.getDomain()));
         }
-        if (availabilityStatus != null && !availabilityStatus.isEmpty()) {
-            stream = stream.filter(e -> availabilityStatus.equals(e.getAvailabilityStatus()));
+        if (availabilityStatus != null && !availabilityStatus.isEmpty() && !"All".equalsIgnoreCase(availabilityStatus)) {
+            stream = stream.filter(e -> availabilityStatus.equalsIgnoreCase(e.getAvailabilityStatus()));
         }
         
         return stream.map(this::mapToDTO).collect(Collectors.toList());
     }
 
+    public EvaluatorDTO getEvaluatorById(Long id) {
+        Evaluator evaluator = evaluatorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Evaluator not found with id: " + id));
+        return mapToDTO(evaluator);
+    }
+
+    @Transactional
     public EvaluatorDTO updateAvailability(Long id, EvaluatorDTO dto) {
-        return evaluatorRepository.findById(id).map(e -> {
-            e.setAvailabilityStatus(dto.getAvailabilityStatus());
-            e.setUnavailableFrom(dto.getUnavailableFrom());
-            e.setUnavailableTo(dto.getUnavailableTo());
-            return mapToDTO(evaluatorRepository.save(e));
-        }).orElse(null);
+        Evaluator evaluator = evaluatorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Evaluator not found with id: " + id));
+
+        if (dto.getAvailabilityStatus() != null) {
+            evaluator.setAvailabilityStatus(dto.getAvailabilityStatus());
+        }
+        evaluator.setUnavailableFrom(dto.getUnavailableFrom());
+        evaluator.setUnavailableTo(dto.getUnavailableTo());
+        return mapToDTO(evaluatorRepository.save(evaluator));
     }
     
     public List<String> getVerticals() {

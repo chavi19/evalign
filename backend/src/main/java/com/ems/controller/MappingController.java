@@ -5,6 +5,7 @@ import com.ems.dto.MappingDTO;
 import com.ems.dto.MappingRequest;
 import com.ems.service.MappingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +27,8 @@ public class MappingController {
 
     @PostMapping("/mappings")
     public ResponseEntity<MappingDTO> createManualMapping(@RequestBody MappingRequest request) {
-        return ResponseEntity.ok(mappingService.createManualMapping(request));
+        MappingDTO created = mappingService.createManualMapping(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PostMapping({ "/cohorts/{cohortId}/auto-map", "/mappings/auto-map" })
@@ -34,10 +36,11 @@ public class MappingController {
             @PathVariable(required = false) Long cohortId, 
             @RequestBody AutoMapRequest request) {
         Long targetCohortId = cohortId != null ? cohortId : request.getCohortId();
-        return ResponseEntity.ok(mappingService.autoMap(targetCohortId, request.getRound()));
+        List<MappingDTO> mappings = mappingService.autoMap(targetCohortId, request.getRound());
+        return ResponseEntity.status(HttpStatus.CREATED).body(mappings);
     }
 
-    @RequestMapping(value = "/mappings/{id}/confirm", method = { RequestMethod.POST, RequestMethod.PUT })
+    @PutMapping("/mappings/{id}/confirm")
     public ResponseEntity<MappingDTO> confirmMapping(@PathVariable Long id) {
         return ResponseEntity.ok(mappingService.confirmMapping(id));
     }

@@ -3,6 +3,7 @@ package com.ems.controller;
 import com.ems.dto.CohortDTO;
 import com.ems.service.CohortService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,19 +23,18 @@ public class CohortController {
 
     @GetMapping("/{id}")
     public ResponseEntity<CohortDTO> getCohortById(@PathVariable Long id) {
-        CohortDTO dto = cohortService.getCohortById(id);
-        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
+        return ResponseEntity.ok(cohortService.getCohortById(id));
     }
 
     @PostMapping
     public ResponseEntity<CohortDTO> createCohort(@RequestBody CohortDTO dto) {
-        return ResponseEntity.ok(cohortService.createCohort(dto));
+        CohortDTO created = cohortService.createCohort(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CohortDTO> updateCohort(@PathVariable Long id, @RequestBody CohortDTO dto) {
-        CohortDTO updated = cohortService.updateCohort(id, dto);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+        return ResponseEntity.ok(cohortService.updateCohort(id, dto));
     }
 
     @DeleteMapping("/{id}")

@@ -44,10 +44,6 @@
           {{ error }}
         </div>
 
-        <div class="forgot-row">
-          <a href="#" (click)="$event.preventDefault()">Forgot password?</a>
-        </div>
-
         <button type="submit" [disabled]="loginForm.invalid || loading" class="btn-login">
           <span *ngIf="!loading">LOG IN</span>
           <span *ngIf="loading">Logging in...</span>

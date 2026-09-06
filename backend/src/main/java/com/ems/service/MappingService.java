@@ -4,6 +4,7 @@ import com.ems.dto.MappingDTO;
 import com.ems.dto.MappingRequest;
 import com.ems.entity.*;
 import com.ems.exception.BusinessRuleException;
+import com.ems.exception.ResourceNotFoundException;
 import com.ems.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,6 +34,9 @@ public class MappingService {
     private UserRepository userRepository;
 
     public List<MappingDTO> getMappingsByCohortAndRound(Long cohortId, String round) {
+        if (!cohortRepository.existsById(cohortId)) {
+            throw new ResourceNotFoundException("Cohort not found with id: " + cohortId);
+        }
         List<EvaluatorMapping> existingMappings = mappingRepository.findByCohortCohortIdAndRound(cohortId, round);
 
         List<MappingDTO> result = new ArrayList<>();
@@ -45,9 +49,12 @@ public class MappingService {
 
     @Transactional
     public MappingDTO createManualMapping(MappingRequest request) {
-        Cohort cohort = cohortRepository.findById(request.getCohortId()).orElseThrow(() -> new BusinessRuleException("Cohort not found"));
-        Candidate candidate = candidateRepository.findById(request.getCandidateId()).orElseThrow(() -> new BusinessRuleException("Candidate not found"));
-        Evaluator evaluator = evaluatorRepository.findById(request.getEvaluatorId()).orElseThrow(() -> new BusinessRuleException("Evaluator not found"));
+        Cohort cohort = cohortRepository.findById(request.getCohortId())
+                .orElseThrow(() -> new ResourceNotFoundException("Cohort not found with id: " + request.getCohortId()));
+        Candidate candidate = candidateRepository.findById(request.getCandidateId())
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + request.getCandidateId()));
+        Evaluator evaluator = evaluatorRepository.findById(request.getEvaluatorId())
+                .orElseThrow(() -> new ResourceNotFoundException("Evaluator not found with id: " + request.getEvaluatorId()));
         
         validateMappingRules(cohort, candidate, evaluator, request.getRound());
         
@@ -77,7 +84,8 @@ public class MappingService {
 
     @Transactional
     public List<MappingDTO> autoMap(Long cohortId, String round) {
-        Cohort cohort = cohortRepository.findById(cohortId).orElseThrow(() -> new BusinessRuleException("Cohort not found"));
+        Cohort cohort = cohortRepository.findById(cohortId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cohort not found with id: " + cohortId));
         List<Candidate> candidates = candidateRepository.findByCohortCohortId(cohortId);
         List<EvaluatorShortlist> shortlist = shortlistRepository.findByCohortCohortId(cohortId);
         
@@ -140,7 +148,8 @@ public class MappingService {
     
     @Transactional
     public MappingDTO confirmMapping(Long mappingId) {
-        EvaluatorMapping mapping = mappingRepository.findById(mappingId).orElseThrow(() -> new BusinessRuleException("Mapping not found"));
+        EvaluatorMapping mapping = mappingRepository.findById(mappingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mapping not found with id: " + mappingId));
         
         validateMappingRules(mapping.getCohort(), mapping.getCandidate(), mapping.getEvaluator(), mapping.getRound());
         
@@ -236,4 +245,3 @@ public class MappingService {
         return dto;
     }
 }
-

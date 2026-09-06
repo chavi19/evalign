@@ -1,19 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { EvaluatorService } from '../../services/evaluator.service';
 import { CohortService } from '../../services/cohort.service';
 import { Evaluator } from '../../models/evaluator.model';
 import { Cohort } from '../../models/cohort.model';
 
 @Component({
-  selector: 'app-evaluators',
+  selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './evaluators.component.html',
-  styleUrls: ['./evaluators.component.css']
+  imports: [CommonModule, FormsModule, RouterModule],
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.css']
 })
-export class EvaluatorsComponent implements OnInit {
+export class HomeComponent implements OnInit {
   evaluators: Evaluator[] = [];
   filteredEvaluators: Evaluator[] = [];
   cohorts: Cohort[] = [];
@@ -76,6 +77,18 @@ export class EvaluatorsComponent implements OnInit {
       },
       error: (err) => console.error('Failed to load cohorts', err)
     });
+  }
+
+  get totalEvaluatorsCount(): number {
+    return this.evaluators.length;
+  }
+
+  get availableEvaluatorsCount(): number {
+    return this.evaluators.filter(e => e.availabilityStatus === 'AVAILABLE').length;
+  }
+
+  get activeCohortsCount(): number {
+    return this.cohorts.filter(c => c.status === 'ACTIVE').length;
   }
 
   applyFilters(): void {

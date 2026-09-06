@@ -29,6 +29,11 @@ public class EvaluatorController {
         return ResponseEntity.ok(evaluatorService.getEvaluators(vertical, domain, availability));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<EvaluatorDTO> getEvaluatorById(@PathVariable Long id) {
+        return ResponseEntity.ok(evaluatorService.getEvaluatorById(id));
+    }
+
     @PutMapping("/{id}/availability")
     public ResponseEntity<EvaluatorDTO> updateAvailability(@PathVariable Long id, @RequestBody EvaluatorDTO dto) {
         return ResponseEntity.ok(evaluatorService.updateAvailability(id, dto));

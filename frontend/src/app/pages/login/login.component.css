@@ -134,17 +134,6 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.forgot-row {
-  text-align: right;
-  margin-bottom: 24px;
-}
-
-.forgot-row a {
-  font-size: 12px;
-  color: #2563eb;
-  text-decoration: none;
-}
-
 .btn-login {
   width: 100%;
   padding: 12px;
@@ -157,6 +146,7 @@
   letter-spacing: 0.5px;
   cursor: pointer;
   transition: background-color 0.2s;
+  margin-top: 10px;
 }
 
 .btn-login:hover:not(:disabled) {
