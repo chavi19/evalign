@@ -207,12 +207,14 @@ When studying or recreating this project, read files in this exact sequence:
 | **POST** | `/api/candidates` | `CandidateController` | Create new candidate | `CandidateDTO` | `CandidateDTO` | **201 CREATED** | 404 Not Found, 400 Bad Request |
 | **PUT** | `/api/candidates/{id}` | `CandidateController` | Update candidate name | `@PathVariable Long id`, `CandidateDTO` | `CandidateDTO` | **200 OK** | 404 Not Found |
 | **DELETE** | `/api/candidates/{id}` | `CandidateController` | Delete candidate | `@PathVariable Long id` | None | **204 NO CONTENT**| 404 Not Found |
-| **GET** | `/api/evaluators` | `EvaluatorController` | List evaluators with filters | `@RequestParam` vertical, domain, availability | `List<EvaluatorDTO>` | **200 OK** | 500 Internal Server Error |
+| **GET** | `/api/evaluators` | `EvaluatorController` | List evaluators with filters | `@RequestParam` vertical, domain, availability, interviewFrom, interviewTo | `List<EvaluatorDTO>` | **200 OK** | 400 Bad Request, 500 Internal Server Error |
 | **GET** | `/api/evaluators/{id}` | `EvaluatorController` | Get evaluator by ID | `@PathVariable Long id` | `EvaluatorDTO` | **200 OK** | 404 Not Found |
 | **PUT** | `/api/evaluators/{id}/availability` | `EvaluatorController` | Toggle evaluator availability | `@PathVariable Long id`, `EvaluatorDTO` | `EvaluatorDTO` | **200 OK** | 404 Not Found |
+| **PUT** | `/api/evaluators/{id}/status-reason` | `EvaluatorController` | Update evaluator status reason & dates | `@PathVariable Long id`, `EvaluatorDTO` | `EvaluatorDTO` | **200 OK** | 400 Bad Request, 404 Not Found |
 | **GET** | `/api/evaluators/verticals` | `EvaluatorController` | Get distinct verticals | None | `List<String>` | **200 OK** | 500 Internal Server Error |
 | **GET** | `/api/evaluators/domains` | `EvaluatorController` | Get distinct domains | None | `List<String>` | **200 OK** | 500 Internal Server Error |
 | **POST** | `/api/evaluators/upload` | `EvaluatorController` | Bulk upload roster via Excel | MultipartFile `file` | `ApiResponse` | **200 OK** | 400 Bad Request |
+| **GET** | `/api/evaluators/export` | `EvaluatorController` | Download Master Excel roster | None | `byte[]` (Excel stream) | **200 OK** | 404 Not Found, 500 Internal Server Error |
 | **GET** | `/api/cohorts/{cohortId}/shortlist` | `ShortlistController` | Get cohort shortlist | `@PathVariable Long cohortId` | `List<Evaluator>` | **200 OK** | 404 Not Found |
 | **POST** | `/api/cohorts/{cohortId}/shortlist/{evaluatorId}` | `ShortlistController` | Add evaluator to cohort | `@PathVariable` cohortId, evaluatorId | `ApiResponse` | **201 CREATED** | 404 Not Found, 409 Conflict |
 | **DELETE** | `/api/cohorts/{cohortId}/shortlist/{evaluatorId}` | `ShortlistController` | Remove evaluator from shortlist | `@PathVariable` cohortId, evaluatorId | None | **204 NO CONTENT**| 404 Not Found |
@@ -308,6 +310,30 @@ The business rules are implemented centrally in `backend/src/main/java/com/ems/s
   4. Iterate through available evaluators, test `canMap()` against Rules 1–4.
   5. Select the eligible evaluator with the lowest current workload (`mappingRepository.countByEvaluatorEvaluatorIdAndRound()`).
   6. Create or update the `SUGGESTED` mapping record.
+
+---
+
+### Rule 6: Interview Date Range Availability Overlap Logic
+- **Implementation:** `EvaluatorService.java` -> `isAvailableForDateRange(Evaluator e, LocalDate interviewFrom, LocalDate interviewTo)`
+- **Logic:**
+  1. If `isPermanent == true` or `availabilityStatus == UNAVAILABLE` with no date range set, the evaluator is permanently unavailable.
+  2. If the evaluator is marked `UNAVAILABLE` for a temporary leave window `[unavailableFrom, unavailableTo]`:
+     - Calculate date overlap: `boolean overlaps = !interviewFrom.isAfter(e.getUnavailableTo()) && !interviewTo.isBefore(e.getUnavailableFrom());`
+     - If the interview dates overlap with the leave window (`overlaps == true`), the evaluator is **UNAVAILABLE** for this interview window.
+     - If the interview dates fall outside the leave window (`overlaps == false`), the evaluator is dynamically considered **AVAILABLE** for this interview window.
+  3. Input Validation: If `interviewFrom > interviewTo`, throws `IllegalArgumentException` / HTTP 400.
+
+---
+
+### Rule 7: Status Reason Management & Master Excel Two-Way Sync
+- **Implementation:** `EvaluatorService.java` -> `updateStatusReason()`, `ExcelUploadService.java` -> `updateEvaluatorStatusInMasterExcel()`
+- **Logic:**
+  1. When an evaluator becomes unavailable (temporary leave, resigned, maternity leave, project deadline), the POC clicks `"Update Status Reason"` on the dashboard.
+  2. The POC selects or types a reason, specifies whether it is Temporary (with From/To dates) or Permanent (no dates), and saves.
+  3. The database record is updated (`status_reason`, `is_permanent`, `unavailable_from`, `unavailable_to`, `availability_status`).
+  4. **Excel Preservation**: Using Apache POI, the system opens the master Excel file (`uploads/master_evaluators.xlsx`), locates the exact evaluator row matching their unique `empId` (Column 0), updates only their status columns (`STATUS_REASON`, `PERMANENT`, `UNAVAILABLE_FROM`, `UNAVAILABLE_TO`, `AVAILABILITY_STATUS`), and writes the file back preserving cell styles, sheet structure, and all other evaluator rows.
+  5. Evaluators are NEVER deleted when unavailable.
+  6. The updated Master Excel file can be exported/downloaded at any time via `GET /api/evaluators/export`.
 
 ---
 
@@ -542,8 +568,8 @@ Because the Angular frontend runs on port 4200 and the Spring Boot backend runs 
 - **Reference:** `backend/src/main/java/com/ems/exception/*`.
 
 ### Stage 7 — Business Services & Rule Engine
-- **What to create:** `MappingService` (isolation rules & auto-map), `ShortlistService`, `CohortService`, `EvaluatorService`, `CandidateService`, `ExcelUploadService`, `AuthService`.
-- **Why:** Implements core business logic and transactional boundaries.
+- **What to create:** `MappingService` (isolation rules & auto-map), `ShortlistService`, `CohortService`, `EvaluatorService` (date-range filtering & status reason updates), `CandidateService`, `ExcelUploadService` (POI parsing, row-level sync, and export), `AuthService`.
+- **Why:** Implements core business logic, date-overlap calculations, Excel preservation, and transactional boundaries.
 - **Reference:** `backend/src/main/java/com/ems/service/*`.
 
 ### Stage 8 — Security & JWT Infrastructure
@@ -552,34 +578,34 @@ Because the Angular frontend runs on port 4200 and the Spring Boot backend runs 
 - **Reference:** `backend/src/main/java/com/ems/config/*`.
 
 ### Stage 9 — REST API Controllers
-- **What to create:** `AuthController`, `CohortController`, `CandidateController`, `EvaluatorController`, `ShortlistController`, `MappingController`, `ReportController`.
+- **What to create:** `AuthController`, `CohortController`, `CandidateController`, `EvaluatorController` (with date params, `status-reason` PUT, and `export` GET), `ShortlistController`, `MappingController`, `ReportController`.
 - **Why:** Exposes REST endpoints with proper annotations and HTTP status codes.
 - **Reference:** `backend/src/main/java/com/ems/controller/*`.
 
 ### Stage 10 — Backend Testing
-- **What to create:** `CohortControllerTest`, `EvaluatorControllerTest`, `MappingControllerTest` using `MockMvc`, `@WebMvcTest`, `@MockBean`, `jsonPath()`.
-- **Why:** Verifies 200, 201, 204, 404, and 409 REST behavior.
-- **Reference:** `backend/src/test/java/com/ems/controller/*`.
+- **What to create:** `CohortControllerTest`, `EvaluatorControllerTest`, `EvaluatorServiceTest`, `MappingControllerTest` using `MockMvc`, `@WebMvcTest`, `@MockBean`, `jsonPath()`.
+- **Why:** Verifies 200, 201, 204, 400, 404, and 409 REST behavior, plus all 12 date range and status reason business scenarios.
+- **Reference:** `backend/src/test/java/com/ems/*`.
 
 ### Stage 11 — Angular Project Setup & Models
-- **What to create:** Angular standalone application, install dependencies, create models (`cohort.model.ts`, `evaluator.model.ts`, `mapping.model.ts`, etc.).
+- **What to create:** Angular standalone application, install dependencies, create models (`cohort.model.ts`, `evaluator.model.ts` with `statusReason`/`isPermanent`, `mapping.model.ts`, etc.).
 - **Why:** Establishes client TypeScript foundation matching backend DTOs.
 - **Reference:** `frontend/src/app/models/*`.
 
 ### Stage 12 — Angular Services, Interceptors & Guards
-- **What to create:** `AuthService`, `CohortService`, `EvaluatorService`, `MappingService`, `ReportService`, `AuthInterceptor`, `AuthGuard`.
+- **What to create:** `AuthService`, `CohortService`, `EvaluatorService` (with date filtering, status reason update, export API), `MappingService`, `ReportService`, `AuthInterceptor`, `AuthGuard`.
 - **Why:** Handles API communication, token attachment, and route protection.
 - **Reference:** `frontend/src/app/services/*`, `guards/*`, `interceptors/*`.
 
 ### Stage 13 — Angular Pages & Routing
-- **What to create:** `LoginComponent`, `HomeComponent` (metrics & evaluator roster), `CohortsComponent`, `MappingComponent` (interim/final tabs & rule badges), `ReportsComponent`, and `app.routes.ts`.
+- **What to create:** `LoginComponent`, `HomeComponent` (metrics, evaluator roster with Interview Date filters, Status Reason column, "Update Status Reason" modal, Master Excel upload and download), `CohortsComponent`, `MappingComponent` (interim/final tabs & rule badges), `ReportsComponent`, and `app.routes.ts`.
 - **Why:** Provides user interface for batch owners to manage mappings.
 - **Reference:** `frontend/src/app/pages/*`, `app.routes.ts`, `app.component.*`.
 
 ### Stage 14 — Integration & End-to-End Verification
 - **What to verify:**
-  1. Run `mvn test` in backend.
-  2. Run `ng build` in frontend.
+  1. Run `mvn test` in backend (all 24 tests pass, including `SampleExcelGeneratorTest`).
+  2. Run `ng build` in frontend (0 warnings, 0 errors).
   3. Start backend (`mvn spring-boot:run`) and frontend (`npm start`).
   4. Log in with `admin@example.com` / `admin123`.
-  5. Test creating cohorts, managing evaluator availability, uploading Excel, auto-mapping, verifying Interim/Final conflict alerts, and exporting audit reports.
+  5. Test uploading `sample-data/master_evaluators_sample.xlsx`, managing evaluator availability, updating status reasons with date ranges vs permanent, testing interview date filters, downloading master Excel, auto-mapping, verifying Interim/Final conflict alerts, and exporting audit reports.

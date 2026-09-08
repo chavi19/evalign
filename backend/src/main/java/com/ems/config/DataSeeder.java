@@ -85,13 +85,14 @@ public class DataSeeder {
 
         // 4. Evaluators
         Evaluator e1 = new Evaluator(); e1.setEmpId("EMP-1042"); e1.setName("Rahul Menon"); e1.setVertical("Finance"); e1.setDomain("Corporate Banking"); e1.setAvailabilityStatus("AVAILABLE"); e1 = evaluatorRepository.save(e1);
-        Evaluator e2 = new Evaluator(); e2.setEmpId("EMP-1058"); e2.setName("Sneha Iyer"); e2.setVertical("Finance"); e2.setDomain("Risk & Audit"); e2.setAvailabilityStatus("UNAVAILABLE"); e2.setUnavailableFrom(LocalDate.now()); e2.setUnavailableTo(LocalDate.now().plusDays(5)); e2 = evaluatorRepository.save(e2);
+        Evaluator e2 = new Evaluator(); e2.setEmpId("EMP-1058"); e2.setName("Sneha Iyer"); e2.setVertical("Finance"); e2.setDomain("Risk & Audit"); e2.setAvailabilityStatus("UNAVAILABLE"); e2.setUnavailableFrom(LocalDate.now()); e2.setUnavailableTo(LocalDate.now().plusDays(5)); e2.setStatusReason("On Leave"); e2.setIsPermanent(false); e2 = evaluatorRepository.save(e2);
         Evaluator e3 = new Evaluator(); e3.setEmpId("EMP-1105"); e3.setName("Arjun Verma"); e3.setVertical("Insurance"); e3.setDomain("Underwriting"); e3.setAvailabilityStatus("AVAILABLE"); e3 = evaluatorRepository.save(e3);
         Evaluator e4 = new Evaluator(); e4.setEmpId("EMP-1128"); e4.setName("Divya Krishnan"); e4.setVertical("Insurance"); e4.setDomain("Claims"); e4.setAvailabilityStatus("AVAILABLE"); e4 = evaluatorRepository.save(e4);
-        Evaluator e5 = new Evaluator(); e5.setEmpId("EMP-1134"); e5.setName("Karthik Raghavan"); e5.setVertical("Health"); e5.setDomain("Clinical Ops"); e5.setAvailabilityStatus("UNAVAILABLE"); e5.setUnavailableFrom(LocalDate.now()); e5.setUnavailableTo(LocalDate.now().plusDays(2)); e5 = evaluatorRepository.save(e5);
+        Evaluator e5 = new Evaluator(); e5.setEmpId("EMP-1134"); e5.setName("Karthik Raghavan"); e5.setVertical("Health"); e5.setDomain("Clinical Ops"); e5.setAvailabilityStatus("UNAVAILABLE"); e5.setUnavailableFrom(LocalDate.now()); e5.setUnavailableTo(LocalDate.now().plusDays(2)); e5.setStatusReason("Client Project Deadline"); e5.setIsPermanent(false); e5 = evaluatorRepository.save(e5);
         Evaluator e6 = new Evaluator(); e6.setEmpId("EMP-1156"); e6.setName("Priya Nair"); e6.setVertical("Health"); e6.setDomain("Pharma Compliance"); e6.setAvailabilityStatus("AVAILABLE"); e6 = evaluatorRepository.save(e6);
         Evaluator e7 = new Evaluator(); e7.setEmpId("EMP-1172"); e7.setName("Vishal Sharma"); e7.setVertical("IT"); e7.setDomain("Cloud Infra"); e7.setAvailabilityStatus("AVAILABLE"); e7 = evaluatorRepository.save(e7);
         Evaluator e8 = new Evaluator(); e8.setEmpId("EMP-1089"); e8.setName("S. Prakash"); e8.setVertical("IT"); e8.setDomain("Data Science"); e8.setAvailabilityStatus("AVAILABLE"); e8 = evaluatorRepository.save(e8);
+        Evaluator e9 = new Evaluator(); e9.setEmpId("EMP-1199"); e9.setName("Ananya Roy"); e9.setVertical("Finance"); e9.setDomain("Corporate Banking"); e9.setAvailabilityStatus("UNAVAILABLE"); e9.setStatusReason("Left company"); e9.setIsPermanent(true); e9 = evaluatorRepository.save(e9);
 
         // 5. Shortlist
         addShortlist(batch1, e1, poc);

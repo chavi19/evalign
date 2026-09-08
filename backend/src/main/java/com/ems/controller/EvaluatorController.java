@@ -5,10 +5,14 @@ import com.ems.dto.EvaluatorDTO;
 import com.ems.service.EvaluatorService;
 import com.ems.service.ExcelUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -25,13 +29,20 @@ public class EvaluatorController {
     public ResponseEntity<List<EvaluatorDTO>> getEvaluators(
             @RequestParam(required = false) String vertical,
             @RequestParam(required = false) String domain,
-            @RequestParam(required = false) String availability) {
-        return ResponseEntity.ok(evaluatorService.getEvaluators(vertical, domain, availability));
+            @RequestParam(required = false) String availability,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate interviewFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate interviewTo) {
+        return ResponseEntity.ok(evaluatorService.getEvaluators(vertical, domain, availability, interviewFrom, interviewTo));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EvaluatorDTO> getEvaluatorById(@PathVariable Long id) {
         return ResponseEntity.ok(evaluatorService.getEvaluatorById(id));
+    }
+
+    @PutMapping("/{id}/status-reason")
+    public ResponseEntity<EvaluatorDTO> updateStatusReason(@PathVariable Long id, @RequestBody EvaluatorDTO dto) {
+        return ResponseEntity.ok(evaluatorService.updateStatusReason(id, dto));
     }
 
     @PutMapping("/{id}/availability")
@@ -56,6 +67,19 @@ public class EvaluatorController {
             return ResponseEntity.ok(new ApiResponse(true, "Excel file uploaded and processed successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "Failed to process Excel file: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportExcel() {
+        try {
+            byte[] excelBytes = excelUploadService.getMasterExcelBytes();
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"master_evaluators.xlsx\"")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(excelBytes);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
     }
 }

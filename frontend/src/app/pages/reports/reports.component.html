@@ -1,85 +1,127 @@
 <div class="page-container">
-  <div class="page-header">
-    <div class="title-section">
-      <h2>Mapping Audit Reports</h2>
-      <p class="subtitle">Complete audit trail of all evaluator assignments across interview rounds.</p>
+  
+  <!-- Page Header -->
+  <div class="page-header-block">
+    <div class="title-area">
+      <h2>Mapping Audit Reports & Trail</h2>
+      <p class="subtitle">Complete chronological audit record of all evaluator assignments, stage movements, and confirmations.</p>
     </div>
-    <div class="header-actions">
-      <button class="btn-primary" (click)="exportCsv()">
-        &darr; Export CSV
+    <div class="header-actions-group">
+      <button class="btn btn-primary" (click)="exportCsv()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Export Audit CSV</span>
       </button>
     </div>
   </div>
 
-  <div class="filters-container">
-    <input type="text" placeholder="Search candidate or evaluator..." [(ngModel)]="filters.search" (ngModelChange)="onFilterChange()" class="filter-input search-box">
-
-    <div class="filter-group">
-      <label>Cohort:</label>
-      <select [(ngModel)]="filters.cohortName" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="All">All Cohorts</option>
-        <option *ngFor="let c of cohorts" [value]="c.cohortName">{{ c.cohortName }}</option>
-      </select>
-    </div>
-    
-    <div class="filter-group">
-      <label>Stage:</label>
-      <select [(ngModel)]="filters.stage" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="All">All Stages</option>
-        <option value="INTERIM">Interim</option>
-        <option value="FINAL">Final</option>
-      </select>
+  <!-- Filter Console -->
+  <div class="reports-filter-bar">
+    <div class="search-field-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" placeholder="Search candidate or evaluator..." [(ngModel)]="filters.search" (ngModelChange)="onFilterChange()" class="console-search-input">
     </div>
 
-    <div class="filter-group">
-      <label>Status:</label>
-      <select [(ngModel)]="filters.status" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="All">All Statuses</option>
-        <option value="CONFIRMED">Confirmed</option>
-        <option value="SUGGESTED">Suggested</option>
-      </select>
+    <div class="select-group">
+      <div class="select-item">
+        <label>Cohort</label>
+        <select [(ngModel)]="filters.cohortName" (ngModelChange)="onFilterChange()" class="console-select">
+          <option value="All">All Cohorts</option>
+          <option *ngFor="let c of cohorts" [value]="c.cohortName">{{ c.cohortName }}</option>
+        </select>
+      </div>
+
+      <div class="select-item">
+        <label>Stage</label>
+        <select [(ngModel)]="filters.stage" (ngModelChange)="onFilterChange()" class="console-select">
+          <option value="All">All Stages</option>
+          <option value="INTERIM">Interim Round</option>
+          <option value="FINAL">Final Round</option>
+        </select>
+      </div>
+
+      <div class="select-item">
+        <label>Status</label>
+        <select [(ngModel)]="filters.status" (ngModelChange)="onFilterChange()" class="console-select">
+          <option value="All">All Statuses</option>
+          <option value="CONFIRMED">Confirmed Only</option>
+          <option value="SUGGESTED">Suggested Only</option>
+        </select>
+      </div>
     </div>
 
-    <span class="count-tag">{{ filteredReports.length }} records</span>
+    <div class="record-count-chip">
+      <strong>{{ filteredReports.length }}</strong> Audit Records
+    </div>
   </div>
 
+  <!-- Audit Table -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
-          <th>Candidate</th>
-          <th>Evaluator</th>
-          <th>Cohort</th>
-          <th>Stage</th>
-          <th>Attempt</th>
-          <th>Status</th>
-          <th>Mapped By</th>
-          <th>Mapped At</th>
+          <th>CANDIDATE</th>
+          <th>EVALUATOR</th>
+          <th>COHORT BATCH</th>
+          <th>ROUND / STAGE</th>
+          <th>ATTEMPT</th>
+          <th>CONFIRMATION STATUS</th>
+          <th>MAPPED BY</th>
+          <th>TIMESTAMP</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let r of filteredReports">
-          <td class="font-semibold">{{ r.candidateName }}</td>
-          <td>{{ r.evaluatorName }}</td>
-          <td><span class="cohort-tag">{{ r.cohortName }}</span></td>
           <td>
-            <span class="pill-stage" [ngClass]="r.round === 'INTERIM' ? 'stage-interim' : 'stage-final'">
+            <span class="candidate-name">{{ r.candidateName }}</span>
+          </td>
+          <td>
+            <div class="eval-assigned-cell">
+              <span class="eval-dot"></span>
+              <span class="eval-name">{{ r.evaluatorName }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="pill-tag">{{ r.cohortName }}</span>
+          </td>
+          <td>
+            <span class="stage-badge" [ngClass]="r.round === 'INTERIM' ? 'stage-interim' : 'stage-final'">
               {{ r.round }}
             </span>
           </td>
-          <td>Attempt {{ r.attempt }}</td>
+          <td>
+            <span class="attempt-chip">Attempt {{ r.attempt }}</span>
+          </td>
           <td>
             <span class="badge" [ngClass]="r.status === 'CONFIRMED' ? 'badge-green' : 'badge-orange'">
               {{ r.status }}
             </span>
           </td>
-          <td>{{ r.mappedByName || 'Admin' }}</td>
-          <td>{{ r.mappedAt ? (r.mappedAt | date:'dd-MMM-yyyy HH:mm') : 'Seeded' }}</td>
+          <td>
+            <div class="mapped-by-cell">
+              <span class="mapped-user">{{ r.mappedByName || 'Batch Owner' }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="date-tag">{{ r.mappedAt ? (r.mappedAt | date:'dd-MMM-yyyy HH:mm') : 'System Seeded' }}</span>
+          </td>
         </tr>
         <tr *ngIf="filteredReports.length === 0">
-          <td colspan="8" class="text-center empty-state">No mapping records found matching the filters.</td>
+          <td colspan="8" class="text-center empty-state">
+            <div class="empty-state-content">
+              <span class="empty-title">No audit records match the selected filters</span>
+              <span class="empty-hint">Try clearing your search query or selecting all cohorts.</span>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
+
 </div>

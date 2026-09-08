@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS evaluators (
     availability_status VARCHAR(20) DEFAULT 'AVAILABLE',
     unavailable_from DATE,
     unavailable_to DATE,
+    status_reason VARCHAR(255),
+    is_permanent BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

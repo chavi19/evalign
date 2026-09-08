@@ -1,55 +1,97 @@
-<div class="login-page">
-  <div class="login-left">
-    <div class="branding">
-      <div class="logo-title">
-        <span class="logo-icon">&#10022;</span>
-        <h1>Evaluator Mapping System</h1>
+<div class="login-wrapper">
+  <!-- Left Brand Stage -->
+  <div class="login-brand-stage">
+    <div class="brand-content">
+      <div class="platform-badge">
+        <span class="badge-dot"></span>
+        <span>Cognizant Talent & Training Operations</span>
       </div>
-      <p class="tagline">Plan interim & final interview evaluators without the back-and-forth.</p>
-    </div>
 
-    <div class="feature-boxes">
-      <div class="feature-box">
-        <h3>Upload Evaluators</h3>
-        <p>Excel &rarr; Auto email &rarr; Accept/Deny</p>
+      <div class="brand-hero">
+        <div class="brand-logo-mark">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <h1>Evaluator Mapping System</h1>
+        <p class="hero-tagline">Intelligent SME allocation, conflict prevention, and availability tracking across Interim and Final interview rounds.</p>
       </div>
-      <div class="feature-box">
-        <h3>Map Evaluators</h3>
-        <p>No evaluator repeats Interim &rarr; Final</p>
+
+      <div class="capability-cards">
+        <div class="capability-card">
+          <div class="cap-icon">&#10003;</div>
+          <div class="cap-text">
+            <strong>Rule Isolation Engine</strong>
+            <span>Zero repetition from Interim to Final; mandatory new evaluators for repeat attempts.</span>
+          </div>
+        </div>
+
+        <div class="capability-card">
+          <div class="cap-icon">&#10003;</div>
+          <div class="cap-text">
+            <strong>Date-Aware Availability</strong>
+            <span>Dynamic overlap evaluation for temporary leave vs permanent roster inactive states.</span>
+          </div>
+        </div>
+
+        <div class="capability-card">
+          <div class="cap-icon">&#10003;</div>
+          <div class="cap-text">
+            <strong>Workload Auto-Balancing</strong>
+            <span>One-click algorithm distributes candidates evenly across available shortlisted SMEs.</span>
+          </div>
+        </div>
       </div>
-      <div class="feature-box">
-        <h3>Track Status</h3>
-        <p>Available &bull; Assigned &bull; Denied</p>
+
+      <div class="security-footer">
+        <span>Protected Internal Business Application &bull; Role-Based Authorization</span>
       </div>
     </div>
   </div>
 
-  <div class="login-right">
-    <div class="login-card">
-      <h2>Batch Owner Login</h2>
-      <p class="sub-text">Sign in with your Cognizant credentials</p>
+  <!-- Right Authentication Panel -->
+  <div class="login-auth-stage">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>Sign In</h2>
+        <p class="auth-subtitle">Enter your Batch Owner credentials to access the workspace</p>
+      </div>
 
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-        <div class="form-group">
-          <label for="email">Email / Associate ID</label>
-          <input type="email" id="email" formControlName="email" placeholder="admin@example.com">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+        <div class="form-field">
+          <label for="email">Associate Email ID</label>
+          <div class="input-container">
+            <input type="email" id="email" formControlName="email" placeholder="admin@example.com" class="auth-input">
+          </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-field">
           <label for="password">Password</label>
-          <input type="password" id="password" formControlName="password" placeholder="admin123">
+          <div class="input-container">
+            <input type="password" id="password" formControlName="password" placeholder="••••••••" class="auth-input">
+          </div>
         </div>
 
-        <div *ngIf="error" class="error-banner">
-          {{ error }}
+        <div *ngIf="error" class="error-alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{{ error }}</span>
         </div>
 
-        <button type="submit" [disabled]="loginForm.invalid || loading" class="btn-login">
-          <span *ngIf="!loading">LOG IN</span>
-          <span *ngIf="loading">Logging in...</span>
+        <button type="submit" [disabled]="loginForm.invalid || loading" class="auth-submit-btn">
+          <span *ngIf="!loading">Sign In to Dashboard &rarr;</span>
+          <span *ngIf="loading">Authenticating...</span>
         </button>
 
-        <p class="restricted-text">Access is restricted to registered Batch Owners / POCs</p>
+        <div class="demo-credentials-card">
+          <div class="demo-label">Demo Credentials:</div>
+          <div class="demo-val"><code>admin&#64;example.com</code> / <code>admin123</code></div>
+        </div>
       </form>
     </div>
   </div>

@@ -24,6 +24,9 @@ public class Evaluator {
     private LocalDate unavailableFrom;
     private LocalDate unavailableTo;
 
+    private String statusReason;
+    private Boolean isPermanent = false;
+
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt = LocalDateTime.now();
 }

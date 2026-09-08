@@ -1,109 +1,194 @@
 <div class="page-container">
+  
+  <!-- Global Notification Banner -->
   <div *ngIf="notification" class="notification-bar" [ngClass]="notification.type">
-    {{ notification.message }}
+    <svg *ngIf="notification.type === 'success'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    <svg *ngIf="notification.type === 'warning'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+      <line x1="12" y1="9" x2="12" y2="13"></line>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>
+    <svg *ngIf="notification.type === 'error'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <span>{{ notification.message }}</span>
   </div>
 
-  <div class="page-header">
-    <div class="title-section">
-      <h2>Evaluator Mapping &mdash; {{ cohort?.cohortName || 'Loading...' }} ({{ cohort?.batchCode }})</h2>
+  <!-- Executive Cohort Summary Card -->
+  <div class="mapping-cohort-card">
+    <div class="cohort-header-info">
+      <div class="cohort-title-row">
+        <h2>{{ cohort?.cohortName || 'Loading Cohort...' }}</h2>
+        <span class="cohort-code-pill">{{ cohort?.batchCode }}</span>
+        <span class="badge" [ngClass]="cohort?.status === 'ACTIVE' ? 'badge-green' : 'badge-orange'">
+          {{ cohort?.status }}
+        </span>
+      </div>
+      <div class="cohort-metrics-row">
+        <span><strong>{{ candidates.length }}</strong> Candidates Registered</span>
+        <span class="divider-dot">&bull;</span>
+        <span><strong>{{ shortlistedEvaluators.length }}</strong> Evaluators Shortlisted</span>
+      </div>
     </div>
-    <div class="header-actions">
-      <button class="btn-automap" (click)="autoMap()" [disabled]="loading">
-        <span *ngIf="!loading">&#9881; Auto-Map Evaluators</span>
-        <span *ngIf="loading">Auto-Mapping...</span>
+
+    <div class="cohort-actions">
+      <button class="btn btn-primary btn-automap" (click)="autoMap()" [disabled]="loading">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span *ngIf="!loading">Execute Auto-Map Algorithm</span>
+        <span *ngIf="loading">Balancing Workloads...</span>
       </button>
     </div>
   </div>
 
-  <div class="tabs-container">
-    <button class="tab-btn" [class.active]="activeTab === 'INTERIM'" (click)="setTab('INTERIM')">
-      Interim Interview
-    </button>
-    <button class="tab-btn" [class.active]="activeTab === 'FINAL'" (click)="setTab('FINAL')">
-      Final Interview
-    </button>
+  <!-- Segmented Interview Stage Bar -->
+  <div class="stage-control-bar">
+    <div class="stage-tabs">
+      <button class="stage-tab-btn" [class.active]="activeTab === 'INTERIM'" (click)="setTab('INTERIM')">
+        <span class="stage-num">1</span>
+        <span>Interim Interview Stage</span>
+      </button>
+      <button class="stage-tab-btn" [class.active]="activeTab === 'FINAL'" (click)="setTab('FINAL')">
+        <span class="stage-num">2</span>
+        <span>Final Interview Stage</span>
+      </button>
+    </div>
+
+    <!-- Active Stage Notice -->
+    <div class="rule-hint-pill">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+      <span *ngIf="activeTab === 'INTERIM'">Interim Stage: Initial candidate assessment mapping</span>
+      <span *ngIf="activeTab === 'FINAL'">Final Stage: Enforcing Interim-Final isolation & attempt exclusion</span>
+    </div>
   </div>
 
+  <!-- Mapping Data Table -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
-          <th>Candidate</th>
-          <th>Attempt</th>
-          <th>Suggested Evaluator</th>
-          <th>Interim Evaluator (locked)</th>
-          <th>Availability</th>
-          <th>Action</th>
+          <th>CANDIDATE</th>
+          <th>ATTEMPT</th>
+          <th>ASSIGNED / SUGGESTED EVALUATOR</th>
+          <th>LOCKED INTERIM EVALUATOR</th>
+          <th>STATUS & CONSTRAINTS</th>
+          <th class="text-center">MAPPING ACTION</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let row of tableRows">
-          <td class="font-semibold">{{ row.candidateName }}</td>
           <td>
-            <span class="attempt-badge">{{ row.attemptLabel }}</span>
+            <div class="candidate-cell">
+              <div class="candidate-avatar">
+                {{ row.candidateName.substring(0,2).toUpperCase() }}
+              </div>
+              <span class="candidate-name">{{ row.candidateName }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="attempt-chip" [class.retake]="row.attempt > 1">
+              {{ row.attemptLabel }}
+            </span>
           </td>
           <td>
             <!-- View Mode -->
-            <div *ngIf="!row.isEditing && row.evaluatorName" class="evaluator-display">
+            <div *ngIf="!row.isEditing && row.evaluatorName" class="evaluator-assigned-pill">
+              <span class="eval-dot"></span>
               <span class="eval-name">{{ row.evaluatorName }}</span>
             </div>
 
             <!-- Edit / Dropdown Mode -->
-            <div *ngIf="row.isEditing || !row.evaluatorName" class="evaluator-select-wrapper">
-              <select class="evaluator-select" (change)="onEvaluatorSelected(row, $any($event.target).value)" [value]="row.evaluatorId || ''">
-                <option value="" disabled selected>-- Select Evaluator --</option>
+            <div *ngIf="row.isEditing || !row.evaluatorName" class="eval-select-container">
+              <select class="console-select eval-select" 
+                      (change)="onEvaluatorSelected(row, $any($event.target).value)" 
+                      [value]="row.evaluatorId || ''">
+                <option value="" disabled selected>-- Select Eligible Evaluator --</option>
                 <option *ngFor="let ev of shortlistedEvaluators" [value]="ev.evaluatorId">
-                  {{ ev.name }} ({{ ev.vertical }} - {{ ev.availabilityStatus }})
+                  {{ ev.name }} &bull; {{ ev.vertical }} ({{ ev.availabilityStatus }})
                 </option>
               </select>
             </div>
           </td>
           <td>
-            <span class="locked-eval" *ngIf="row.interimEvaluatorName">
-              {{ row.interimEvaluatorName }}
+            <span class="locked-interim-tag" *ngIf="row.interimEvaluatorName">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>{{ row.interimEvaluatorName }}</span>
             </span>
             <span class="text-muted" *ngIf="!row.interimEvaluatorName">&mdash;</span>
           </td>
           <td>
-            <!-- Warning / Error status -->
-            <div *ngIf="row.ruleWarning" class="status-warning">
-              <span class="icon">&times;</span> {{ row.ruleWarning }}
+            <!-- Rule Conflict Alert -->
+            <div *ngIf="row.ruleWarning" class="conflict-alert-tag">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+              <span>{{ row.ruleWarning }}</span>
             </div>
-            <!-- Available status -->
-            <div *ngIf="!row.ruleWarning && row.evaluatorId" class="status-available">
-              <span class="icon">&check;</span> Available
+
+            <!-- Valid / Available -->
+            <div *ngIf="!row.ruleWarning && row.evaluatorId" class="valid-status-tag">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Eligible & Available</span>
             </div>
+
             <!-- Unassigned -->
             <div *ngIf="!row.evaluatorId" class="text-muted">
-              Unassigned
+              Pending Allocation
             </div>
           </td>
-          <td class="action-cell">
-            <div *ngIf="row.status === 'CONFIRMED'" class="confirmed-tag">
-              &check; Confirmed
+          <td class="text-center">
+            <div *ngIf="row.status === 'CONFIRMED'" class="confirmed-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <span>Confirmed</span>
             </div>
-            <div *ngIf="row.status !== 'CONFIRMED'" class="btn-group">
-              <button class="btn-confirm" 
+
+            <div *ngIf="row.status !== 'CONFIRMED'" class="mapping-actions-group">
+              <button class="btn btn-sm btn-primary" 
                       (click)="confirmMapping(row)"
                       [disabled]="!row.evaluatorId || !!row.ruleWarning"
-                      title="Confirm Mapping">
+                      title="Confirm this mapping assignment">
                 Confirm
               </button>
-              <button class="btn-reassign" (click)="enableReassign(row)" *ngIf="!row.isEditing && row.evaluatorId">
+              <button class="btn btn-sm btn-secondary" 
+                      (click)="enableReassign(row)" 
+                      *ngIf="!row.isEditing && row.evaluatorId"
+                      title="Reassign to a different evaluator">
                 Reassign
               </button>
             </div>
           </td>
         </tr>
         <tr *ngIf="tableRows.length === 0 && !loading">
-          <td colspan="6" class="text-center empty-state">No candidates found in this cohort.</td>
+          <td colspan="6" class="text-center empty-state">
+            <div class="empty-state-content">
+              <span class="empty-title">No candidates enrolled in this cohort batch</span>
+              <span class="empty-hint">Please register candidates before executing mapping operations.</span>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div class="info-banner">
-    <span class="info-icon">&Delta;</span>
-    <span>Constraint enforced automatically: an evaluator who conducted a candidate's Interim interview is excluded from that candidate's Final interview; each new Final attempt requires a fresh evaluator.</span>
-  </div>
 </div>

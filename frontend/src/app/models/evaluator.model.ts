@@ -7,5 +7,7 @@ export interface Evaluator {
   availabilityStatus: string;
   unavailableFrom?: string;
   unavailableTo?: string;
+  statusReason?: string;
+  isPermanent?: boolean;
   isShortlisted?: boolean;
 }

@@ -1,125 +1,355 @@
 <div class="page-container">
+  
+  <!-- Global Notification Banner -->
   <div *ngIf="notification" class="notification-bar" [ngClass]="notification.type">
-    {{ notification.message }}
+    <svg *ngIf="notification.type === 'success'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    <svg *ngIf="notification.type === 'error'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <span>{{ notification.message }}</span>
   </div>
 
-  <!-- Metric Overview Cards -->
-  <div class="overview-cards">
-    <div class="metric-card">
-      <div class="metric-info">
-        <span class="metric-label">Total Evaluators</span>
-        <span class="metric-value">{{ totalEvaluatorsCount }}</span>
+  <!-- Executive Metric Overview Cards -->
+  <div class="metrics-grid">
+    <div class="metric-panel">
+      <div class="metric-top">
+        <span class="metric-title">Total Evaluator Roster</span>
+        <span class="metric-badge pool-badge">Master Pool</span>
       </div>
-      <div class="metric-badge badge-blue">Pool</div>
+      <div class="metric-body">
+        <span class="metric-number">{{ totalEvaluatorsCount }}</span>
+        <span class="metric-trend">Synchronized with Master Excel</span>
+      </div>
     </div>
-    <div class="metric-card">
-      <div class="metric-info">
-        <span class="metric-label">Available Evaluators</span>
-        <span class="metric-value text-green">{{ availableEvaluatorsCount }}</span>
+
+    <div class="metric-panel">
+      <div class="metric-top">
+        <span class="metric-title">Currently Available</span>
+        <span class="metric-badge ready-badge">Active SMEs</span>
       </div>
-      <div class="metric-badge badge-green">Ready</div>
+      <div class="metric-body">
+        <span class="metric-number text-success">{{ availableEvaluatorsCount }}</span>
+        <span class="metric-trend">Ready for Cohort Allocation</span>
+      </div>
     </div>
-    <div class="metric-card">
-      <div class="metric-info">
-        <span class="metric-label">Active Cohorts</span>
-        <span class="metric-value">{{ activeCohortsCount }}</span>
+
+    <div class="metric-panel">
+      <div class="metric-top">
+        <span class="metric-title">Active Cohorts</span>
+        <span class="metric-badge cohort-badge">In Progress</span>
       </div>
-      <div class="metric-badge badge-orange">In Training</div>
+      <div class="metric-body">
+        <span class="metric-number text-accent">{{ activeCohortsCount }}</span>
+        <span class="metric-trend">Training & Mapping Operations</span>
+      </div>
     </div>
   </div>
 
-  <div class="page-header">
-    <div class="title-section">
+  <!-- Page Header & Master Actions -->
+  <div class="page-header-block">
+    <div class="title-area">
       <h2>Evaluator Pool & Dashboard</h2>
-      <p class="subtitle">Upload evaluator roster, manage availability status, and shortlist evaluators for cohorts.</p>
+      <p class="subtitle">Manage SME roster, track date-based availability & status reasons, and sync master spreadsheets.</p>
     </div>
-    <div class="header-actions">
-      <label class="btn-primary upload-btn">
-        <span>&uarr; Upload Excel</span>
+    <div class="header-actions-group">
+      <button class="btn btn-secondary" (click)="downloadMasterExcel()" title="Download updated master Excel with all status reasons">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Download Master Excel</span>
+      </button>
+
+      <label class="btn btn-primary" title="Upload master roster spreadsheet">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Upload Excel</span>
         <input type="file" (change)="onFileUpload($event)" accept=".xlsx, .xls" hidden>
       </label>
     </div>
   </div>
 
-  <div class="filters-container">
-    <input type="text" placeholder="Search by name or emp ID..." [(ngModel)]="filters.search" (ngModelChange)="onFilterChange()" class="filter-input search-box">
-    
-    <div class="filter-group">
-      <label>Vertical:</label>
-      <select [(ngModel)]="filters.vertical" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="All">All</option>
-        <option *ngFor="let v of verticals" [value]="v">{{ v }}</option>
-      </select>
-    </div>
-    
-    <div class="filter-group">
-      <label>Domain:</label>
-      <select [(ngModel)]="filters.domain" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="All">All</option>
-        <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
-      </select>
+  <!-- Structured Filter Control Console -->
+  <div class="filter-console">
+    <!-- Row 1: Search & Attribute Selectors -->
+    <div class="filter-row-primary">
+      <div class="search-field-wrap">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" placeholder="Search by name, emp ID, or reason..." [(ngModel)]="filters.search" (ngModelChange)="onSearchChange()" class="console-search-input">
+      </div>
+
+      <div class="console-select-group">
+        <div class="select-item">
+          <label>Vertical</label>
+          <select [(ngModel)]="filters.vertical" (ngModelChange)="onFilterChange()" class="console-select">
+            <option value="All">All Verticals</option>
+            <option *ngFor="let v of verticals" [value]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <div class="select-item">
+          <label>Domain</label>
+          <select [(ngModel)]="filters.domain" (ngModelChange)="onFilterChange()" class="console-select">
+            <option value="All">All Domains</option>
+            <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
+          </select>
+        </div>
+
+        <div class="select-item">
+          <label>Availability</label>
+          <select [(ngModel)]="filters.availability" (ngModelChange)="onFilterChange()" class="console-select">
+            <option value="All">All Statuses</option>
+            <option value="AVAILABLE">Available Only</option>
+            <option value="UNAVAILABLE">Not Available Only</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div class="filter-group">
-      <label>Availability:</label>
-      <select [(ngModel)]="filters.availability" (ngModelChange)="onFilterChange()" class="filter-select">
-        <option value="All">All</option>
-        <option value="AVAILABLE">Available</option>
-        <option value="UNAVAILABLE">Not Available</option>
-      </select>
-    </div>
+    <!-- Row 2: Interview Date Scheduling & Availability Logic -->
+    <div class="filter-row-date">
+      <div class="date-sched-lead">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span>Interview Schedule Window:</span>
+      </div>
 
-    <span class="count-tag">{{ filteredEvaluators.length }} evaluators</span>
+      <div class="date-inputs-wrap">
+        <div class="date-input-field">
+          <span class="date-label">From:</span>
+          <input type="date" [(ngModel)]="filters.interviewFrom" (ngModelChange)="onFilterChange()" class="console-date-input" title="Interview Start Date">
+        </div>
+        <div class="date-input-field">
+          <span class="date-label">To:</span>
+          <input type="date" [(ngModel)]="filters.interviewTo" (ngModelChange)="onFilterChange()" class="console-date-input" title="Interview End Date">
+        </div>
+        <button *ngIf="filters.interviewFrom || filters.interviewTo" (click)="clearDateFilter()" class="btn-clear-date" title="Clear interview date filter">
+          &times; Reset Dates
+        </button>
+      </div>
+
+      <div class="filter-results-pill">
+        Showing <strong>{{ filteredEvaluators.length }}</strong> of {{ evaluators.length }} Evaluators
+      </div>
+    </div>
   </div>
 
+  <div *ngIf="dateFilterError" class="validation-error-banner">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <span>{{ dateFilterError }}</span>
+  </div>
+
+  <!-- High-Density Evaluator Roster Table -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
           <th>EMP ID</th>
-          <th>EMP NAME</th>
+          <th>EVALUATOR NAME</th>
           <th>VERTICAL</th>
           <th>DOMAIN</th>
           <th>AVAILABILITY</th>
-          <th>UNAVAILABLE FROM - TO</th>
-          <th>ACTION</th>
+          <th>UNAVAILABLE WINDOW</th>
+          <th>STATUS REASON</th>
+          <th class="text-center">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let ev of filteredEvaluators">
-          <td class="emp-id">{{ ev.empId }}</td>
-          <td class="font-semibold">{{ ev.name }}</td>
-          <td><span class="pill-tag">{{ ev.vertical }}</span></td>
-          <td>{{ ev.domain }}</td>
           <td>
-            <button class="badge cursor-pointer" 
-                    [ngClass]="ev.availabilityStatus === 'AVAILABLE' ? 'badge-green' : 'badge-red'"
+            <span class="empid-chip">{{ ev.empId }}</span>
+          </td>
+          <td>
+            <div class="eval-name-cell">
+              <div class="eval-avatar">{{ ev.name ? ev.name.substring(0, 2).toUpperCase() : 'EV' }}</div>
+              <span class="eval-fullname">{{ ev.name }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="pill-tag">{{ ev.vertical }}</span>
+          </td>
+          <td>
+            <span class="domain-text">{{ ev.domain }}</span>
+          </td>
+          <td>
+            <button class="status-toggle-pill" 
+                    [ngClass]="ev.availabilityStatus === 'AVAILABLE' ? 'status-avail' : 'status-unavail'"
                     (click)="toggleAvailability(ev)"
                     title="Click to toggle availability">
-              {{ ev.availabilityStatus === 'AVAILABLE' ? 'Available' : 'Not Available' }}
+              <span class="status-dot"></span>
+              <span>{{ ev.availabilityStatus === 'AVAILABLE' ? 'Available' : 'Unavailable' }}</span>
             </button>
           </td>
           <td>
-            <span class="text-muted" *ngIf="ev.availabilityStatus !== 'AVAILABLE' && ev.unavailableFrom">
-              {{ ev.unavailableFrom | date:'MM/dd/yyyy' }} - {{ ev.unavailableTo | date:'MM/dd/yyyy' }}
-            </span>
-            <span class="text-muted" *ngIf="ev.availabilityStatus === 'AVAILABLE'">-</span>
+            <div *ngIf="ev.availabilityStatus !== 'AVAILABLE'">
+              <span *ngIf="ev.isPermanent" class="permanent-tag">Permanent Exit</span>
+              <span *ngIf="!ev.isPermanent && ev.unavailableFrom" class="date-range-badge">
+                {{ ev.unavailableFrom | date:'MM/dd/yyyy' }} &rarr; {{ ev.unavailableTo | date:'MM/dd/yyyy' }}
+              </span>
+              <span *ngIf="!ev.isPermanent && !ev.unavailableFrom" class="text-muted">&mdash;</span>
+            </div>
+            <span class="text-muted" *ngIf="ev.availabilityStatus === 'AVAILABLE'">&mdash;</span>
           </td>
+          
+          <!-- Requirement 2: Status Reason Column -->
           <td>
-            <button class="btn-action-primary" (click)="openCohortModal(ev)">
+            <div class="status-reason-container">
+              <span *ngIf="ev.statusReason" class="reason-chip" [title]="ev.statusReason">
+                {{ ev.statusReason }}
+              </span>
+              <span *ngIf="!ev.statusReason && ev.availabilityStatus !== 'AVAILABLE'" class="no-reason-tag">
+                Reason unrecorded
+              </span>
+              <span *ngIf="ev.availabilityStatus === 'AVAILABLE' && !ev.statusReason" class="text-muted">&mdash;</span>
+              
+              <!-- EXACT Button Title for Unavailable Evaluators -->
+              <button *ngIf="ev.availabilityStatus !== 'AVAILABLE'" 
+                      class="btn-status-reason" 
+                      (click)="openStatusModal(ev)" 
+                      title="Update Status Reason">
+                Update Status Reason
+              </button>
+            </div>
+          </td>
+
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary" (click)="openCohortModal(ev)" title="Shortlist evaluator for a training cohort">
               + Add to Cohort
             </button>
           </td>
         </tr>
         <tr *ngIf="filteredEvaluators.length === 0">
-          <td colspan="7" class="text-center empty-state">No evaluators found matching the criteria.</td>
+          <td colspan="8" class="text-center empty-state">
+            <div class="empty-state-content">
+              <span class="empty-title">No evaluators match the selected filters</span>
+              <span class="empty-hint">Try adjusting your vertical, domain, or interview date range.</span>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Add to Cohort Modal -->
+<!-- Modal 1: Update Status Reason Modal -->
+<div class="modal-overlay" *ngIf="showStatusModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Update Status Reason & Leave Window</h3>
+      <button class="close-btn" (click)="closeStatusModal()">&times;</button>
+    </div>
+    <div class="modal-body" *ngIf="selectedEvaluatorForStatus">
+      
+      <!-- Evaluator Profile Mini-Card -->
+      <div class="modal-eval-card">
+        <div class="eval-avatar-lg">
+          {{ selectedEvaluatorForStatus.name.substring(0,2).toUpperCase() }}
+        </div>
+        <div class="eval-card-info">
+          <div class="eval-card-name">{{ selectedEvaluatorForStatus.name }} <span class="empid-chip">{{ selectedEvaluatorForStatus.empId }}</span></div>
+          <div class="eval-card-meta">{{ selectedEvaluatorForStatus.vertical }} &bull; {{ selectedEvaluatorForStatus.domain }}</div>
+        </div>
+      </div>
+
+      <div *ngIf="statusModalError" class="validation-error-banner">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ statusModalError }}</span>
+      </div>
+
+      <!-- Quick Suggestion Chips -->
+      <div class="form-group">
+        <label>Common Status Reasons</label>
+        <div class="quick-chips-grid">
+          <button type="button" 
+                  *ngFor="let r of commonReasons" 
+                  class="chip-option" 
+                  [class.active]="statusModalForm.statusReason === r"
+                  (click)="selectQuickReason(r)">
+            {{ r }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Reason Input -->
+      <div class="form-group">
+        <label for="statusReasonInput">Status Reason / Description *</label>
+        <input type="text" 
+               id="statusReasonInput"
+               [(ngModel)]="statusModalForm.statusReason" 
+               placeholder="e.g. On Leave, Client Project Deadline, Resigned..." 
+               class="form-input">
+      </div>
+
+      <!-- Leave Classification Selector -->
+      <div class="form-group">
+        <label>Leave Classification</label>
+        <div class="leave-type-cards">
+          <label class="type-card" [class.selected]="!statusModalForm.isPermanent">
+            <input type="radio" [value]="false" [(ngModel)]="statusModalForm.isPermanent" name="leaveType">
+            <div class="type-card-body">
+              <strong>Temporary Leave</strong>
+              <span>Has a specific leave window; automatically available for dates outside.</span>
+            </div>
+          </label>
+          <label class="type-card" [class.selected]="statusModalForm.isPermanent">
+            <input type="radio" [value]="true" [(ngModel)]="statusModalForm.isPermanent" name="leaveType">
+            <div class="type-card-body">
+              <strong>Permanent / Inactive</strong>
+              <span>Resigned or inactive; never available regardless of interview dates.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Temporary Date Range Box -->
+      <div class="form-group date-box" *ngIf="!statusModalForm.isPermanent">
+        <label>Temporary Leave Window (From &rarr; To) *</label>
+        <div class="modal-date-row">
+          <div class="date-field">
+            <span class="sub-label">From:</span>
+            <input type="date" [(ngModel)]="statusModalForm.unavailableFrom" class="form-input">
+          </div>
+          <div class="date-field">
+            <span class="sub-label">To:</span>
+            <input type="date" [(ngModel)]="statusModalForm.unavailableTo" class="form-input">
+          </div>
+        </div>
+        <small class="text-muted">Evaluator will be marked available automatically for interviews scheduled outside these dates.</small>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeStatusModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveStatusReason()">Save Reason & Update Excel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Add to Cohort Shortlist Modal -->
 <div class="modal-overlay" *ngIf="showCohortModal">
   <div class="modal">
     <div class="modal-header">
@@ -127,19 +357,28 @@
       <button class="close-btn" (click)="closeCohortModal()">&times;</button>
     </div>
     <div class="modal-body" *ngIf="selectedEvaluatorForCohort">
-      <p>Assign <strong>{{ selectedEvaluatorForCohort.name }}</strong> ({{ selectedEvaluatorForCohort.empId }}) to cohort shortlist:</p>
-      <div class="form-group" style="margin-top: 15px;">
-        <label>Select Cohort</label>
-        <select [(ngModel)]="selectedCohortId" class="filter-select" style="width: 100%;">
-          <option *ngFor="let c of cohorts" [ngValue]="c.cohortId">
-            {{ c.cohortName }} ({{ c.batchCode }})
+      <div class="modal-eval-card">
+        <div class="eval-avatar-lg">
+          {{ selectedEvaluatorForCohort.name.substring(0,2).toUpperCase() }}
+        </div>
+        <div class="eval-card-info">
+          <div class="eval-card-name">{{ selectedEvaluatorForCohort.name }} <span class="empid-chip">{{ selectedEvaluatorForCohort.empId }}</span></div>
+          <div class="eval-card-meta">{{ selectedEvaluatorForCohort.vertical }} &bull; {{ selectedEvaluatorForCohort.domain }}</div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 20px;">
+        <label>Select Target Cohort Batch *</label>
+        <select [(ngModel)]="selectedCohortId" class="form-select">
+          <option *ngFor="let c of cohorts" [value]="c.cohortId">
+            {{ c.cohortName }} ({{ c.batchCode }}) &bull; {{ c.candidateCount }} Candidates
           </option>
         </select>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-secondary" (click)="closeCohortModal()">Cancel</button>
-      <button class="btn-primary" (click)="assignToCohort()">Add to Shortlist</button>
+      <button class="btn btn-secondary" (click)="closeCohortModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="assignToCohort()" [disabled]="!selectedCohortId">Shortlist Evaluator</button>
     </div>
   </div>
 </div>
