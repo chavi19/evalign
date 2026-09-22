@@ -6,10 +6,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.Arrays;
+
 @Configuration
 public class CorsConfig {
 
-    @Value("${cors.allowed-origins:http://localhost:4200}")
+    @Value("${cors.allowed-origins:https://evalign-six.vercel.app,http://localhost:4200,http://localhost:8080}")
     private String allowedOrigins;
 
     @Bean
@@ -17,12 +19,13 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                String[] origins = allowedOrigins.contains(",") 
-                        ? allowedOrigins.split(",") 
-                        : new String[]{allowedOrigins.trim()};
+                String[] origins = Arrays.stream(allowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toArray(String[]::new);
 
                 registry.addMapping("/**")
-                        .allowedOriginPatterns(origins)
+                        .allowedOriginPatterns(origins.length > 0 ? origins : new String[]{"*"})
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
                         .allowCredentials(true);
