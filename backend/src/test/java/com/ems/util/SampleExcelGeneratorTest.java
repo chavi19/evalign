@@ -122,4 +122,86 @@ public class SampleExcelGeneratorTest {
             System.out.println("Generated sample Excel at: " + targetPath.toAbsolutePath());
         }
     }
+
+    @Test
+    public void generateCandidateSampleExcel() throws Exception {
+        Path sampleDir = Paths.get("..", "sample-data");
+        if (!Files.exists(sampleDir)) {
+            Files.createDirectories(sampleDir);
+        }
+        Path targetPath = sampleDir.resolve("candidates_sample.xlsx");
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Cohort Candidates");
+
+            // Header Style
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerFont.setFontHeightInPoints((short) 11);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.DARK_TEAL.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+
+            // Data Style
+            CellStyle dataStyle = workbook.createCellStyle();
+            dataStyle.setBorderBottom(BorderStyle.THIN);
+            dataStyle.setBorderTop(BorderStyle.THIN);
+            dataStyle.setBorderLeft(BorderStyle.THIN);
+            dataStyle.setBorderRight(BorderStyle.THIN);
+
+            String[] headers = {"CANDIDATE ID", "CANDIDATE NAME", "EMAIL", "TRACK / DOMAIN"};
+
+            Row headerRow = sheet.createRow(0);
+            headerRow.setHeightInPoints(24);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // 12 realistic sample candidates
+            Object[][] data = {
+                {"CAND-201", "Aarav Mehta", "aarav.mehta@example.com", "Java Full Stack"},
+                {"CAND-202", "Diya Sen", "diya.sen@example.com", "Cloud & DevOps"},
+                {"CAND-203", "Varun Kapoor", "varun.kapoor@example.com", "Data Engineering"},
+                {"CAND-204", "Ishaan Bhat", "ishaan.bhat@example.com", "Python & AI"},
+                {"CAND-205", "Tanvi Joshi", "tanvi.joshi@example.com", "QA Automation"},
+                {"CAND-206", "Aditya Rao", "aditya.rao@example.com", "Cybersecurity"},
+                {"CAND-207", "Riya Saxena", "riya.saxena@example.com", "Java Full Stack"},
+                {"CAND-208", "Manish Kulkarni", "manish.k@example.com", "Cloud & DevOps"},
+                {"CAND-209", "Nandini Shah", "nandini.shah@example.com", "Data Engineering"},
+                {"CAND-210", "Karan Malhotra", "karan.m@example.com", "Python & AI"},
+                {"CAND-211", "Anika Pillai", "anika.pillai@example.com", "QA Automation"},
+                {"CAND-212", "Siddharth Jain", "siddharth.j@example.com", "Cybersecurity"}
+            };
+
+            for (int r = 0; r < data.length; r++) {
+                Row row = sheet.createRow(r + 1);
+                row.setHeightInPoints(20);
+                for (int c = 0; c < data[r].length; c++) {
+                    Cell cell = row.createCell(c);
+                    cell.setCellValue((String) data[r][c]);
+                    cell.setCellStyle(dataStyle);
+                }
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+                sheet.setColumnWidth(i, Math.max(sheet.getColumnWidth(i) + 1200, 4200));
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(targetPath.toFile())) {
+                workbook.write(fos);
+            }
+            System.out.println("Generated candidate sample Excel at: " + targetPath.toAbsolutePath());
+        }
+    }
 }

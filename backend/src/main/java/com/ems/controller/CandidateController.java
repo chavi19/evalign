@@ -37,4 +37,13 @@ public class CandidateController {
         candidateService.deleteCandidate(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/cohorts/{cohortId}/candidates/upload")
+    public ResponseEntity<com.ems.dto.ApiResponse> uploadCandidates(
+            @PathVariable Long cohortId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        List<CandidateDTO> created = candidateService.uploadCandidatesFromExcel(cohortId, file);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new com.ems.dto.ApiResponse(true, "Successfully uploaded " + created.size() + " candidates for cohort"));
+    }
 }

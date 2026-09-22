@@ -19,6 +19,12 @@ export class CohortsComponent implements OnInit {
   statusFilter: string = 'All';
   showModal: boolean = false;
   
+  notification: { message: string; type: 'success' | 'error' } | null = null;
+  modalError: string = '';
+  savingCohort: boolean = false;
+  selectedCandidateFile: File | null = null;
+  candidateFileName: string = '';
+
   newCohort: Partial<Cohort> = {
     cohortName: '',
     batchCode: '',
@@ -31,6 +37,13 @@ export class CohortsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCohorts();
+  }
+
+  showNotification(message: string, type: 'success' | 'error' = 'success'): void {
+    this.notification = { message, type };
+    setTimeout(() => {
+      this.notification = null;
+    }, 4500);
   }
 
   loadCohorts(): void {
@@ -64,10 +77,16 @@ export class CohortsComponent implements OnInit {
 
   openNewCohortModal(): void {
     this.showModal = true;
+    this.modalError = '';
+    this.selectedCandidateFile = null;
+    this.candidateFileName = '';
   }
 
   closeModal(): void {
     this.showModal = false;
+    this.modalError = '';
+    this.selectedCandidateFile = null;
+    this.candidateFileName = '';
     this.newCohort = {
       cohortName: '',
       batchCode: '',
@@ -77,14 +96,57 @@ export class CohortsComponent implements OnInit {
     };
   }
 
+  onCandidateFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedCandidateFile = file;
+      this.candidateFileName = file.name;
+    }
+  }
+
+  removeSelectedFile(): void {
+    this.selectedCandidateFile = null;
+    this.candidateFileName = '';
+  }
+
   saveCohort(): void {
-    if (!this.newCohort.cohortName || !this.newCohort.batchCode) return;
+    if (!this.newCohort.cohortName || !this.newCohort.batchCode) {
+      this.modalError = 'Cohort name and batch code are required';
+      return;
+    }
+
+    this.savingCohort = true;
+    this.modalError = '';
+
     this.cohortService.createCohort(this.newCohort).subscribe({
-      next: () => {
-        this.loadCohorts();
-        this.closeModal();
+      next: (createdCohort) => {
+        if (this.selectedCandidateFile && createdCohort.cohortId) {
+          // Upload Candidate Excel file
+          this.cohortService.uploadCandidateExcel(createdCohort.cohortId, this.selectedCandidateFile).subscribe({
+            next: (uploadRes) => {
+              this.savingCohort = false;
+              this.showNotification(`Cohort '${createdCohort.cohortName}' created and candidates imported successfully!`);
+              this.loadCohorts();
+              this.closeModal();
+            },
+            error: (uploadErr) => {
+              this.savingCohort = false;
+              this.showNotification(`Cohort created, but candidate import had an issue: ${uploadErr.error?.message || 'Invalid file'}`, 'error');
+              this.loadCohorts();
+              this.closeModal();
+            }
+          });
+        } else {
+          this.savingCohort = false;
+          this.showNotification(`Cohort '${createdCohort.cohortName}' created successfully!`);
+          this.loadCohorts();
+          this.closeModal();
+        }
       },
-      error: (err) => console.error('Failed to create cohort', err)
+      error: (err) => {
+        this.savingCohort = false;
+        this.modalError = err.error?.message || 'Failed to create cohort batch';
+      }
     });
   }
 
@@ -98,7 +160,7 @@ export class CohortsComponent implements OnInit {
       case 'IN PROGRESS': return 'badge-orange';
       case 'NOT_STARTED':
       case 'NOT STARTED': return 'badge-red';
-      default: return 'badge-default';
+      default: return 'badge-blue';
     }
   }
 }

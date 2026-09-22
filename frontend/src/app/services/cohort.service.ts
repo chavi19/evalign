@@ -45,6 +45,12 @@ export class CohortService {
     return this.http.post<any>(`${this.API_URL}/${cohortId}/evaluators/${evaluatorId}`, {});
   }
 
+  uploadCandidateExcel(cohortId: number | string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<any>(`${this.API_URL}/${cohortId}/candidates/upload`, formData);
+  }
+
   removeFromShortlist(cohortId: number | string, evaluatorId: number | string): Observable<any> {
     return this.http.delete<any>(`${this.API_URL}/${cohortId}/shortlist/${evaluatorId}`);
   }
