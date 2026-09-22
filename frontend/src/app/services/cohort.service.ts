@@ -4,12 +4,13 @@ import { Observable } from 'rxjs';
 import { Cohort } from '../models/cohort.model';
 import { Candidate } from '../models/candidate.model';
 import { Evaluator } from '../models/evaluator.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CohortService {
-  private readonly API_URL = 'http://localhost:8080/api/cohorts';
+  private readonly API_URL = `${environment.apiUrl}/cohorts`;
 
   constructor(private http: HttpClient) {}
 
@@ -34,7 +35,7 @@ export class CohortService {
   }
 
   getCandidates(cohortId: number | string): Observable<Candidate[]> {
-    return this.http.get<Candidate[]>(`http://localhost:8080/api/cohorts/${cohortId}/candidates`);
+    return this.http.get<Candidate[]>(`${this.API_URL}/${cohortId}/candidates`);
   }
 
   getShortlist(cohortId: number | string): Observable<Evaluator[]> {
