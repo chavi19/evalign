@@ -12,6 +12,6 @@ export const routes: Routes = [
   { path: 'cohorts', component: CohortsComponent, canActivate: [AuthGuard] },
   { path: 'mapping/:cohortId', component: MappingComponent, canActivate: [AuthGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [AuthGuard] },
-  { path: '', redirectTo: '/home', pathMatch: 'full' },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/home' }
 ];
