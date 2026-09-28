@@ -7,6 +7,7 @@ import com.ems.exception.ResourceNotFoundException;
 import com.ems.repository.CandidateRepository;
 import com.ems.repository.CohortRepository;
 import com.ems.repository.EvaluatorMappingRepository;
+import com.ems.repository.EvaluatorShortlistRepository;
 import com.ems.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +32,9 @@ public class CohortService {
     @Autowired
     private EvaluatorMappingRepository mappingRepository;
 
+    @Autowired
+    private EvaluatorShortlistRepository shortlistRepository;
+
     public List<CohortDTO> getAllCohorts() {
         return cohortRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
     }
@@ -53,7 +57,7 @@ public class CohortService {
         cohort.setBatchCode(dto.getBatchCode());
         cohort.setCandidateCount(dto.getCandidateCount() != null ? dto.getCandidateCount() : 0);
         cohort.setStartDate(dto.getStartDate());
-        cohort.setStatus(dto.getStatus() != null ? dto.getStatus() : "ACTIVE");
+        cohort.setStatus(dto.getStatus() != null ? dto.getStatus() : "Active");
         cohort.setPoc(poc);
         
         return mapToDTO(cohortRepository.save(cohort));
@@ -64,10 +68,18 @@ public class CohortService {
         Cohort cohort = cohortRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cohort not found with id: " + id));
         
-        cohort.setCohortName(dto.getCohortName());
-        cohort.setBatchCode(dto.getBatchCode());
-        cohort.setCandidateCount(dto.getCandidateCount() != null ? dto.getCandidateCount() : cohort.getCandidateCount());
-        cohort.setStartDate(dto.getStartDate());
+        if (dto.getCohortName() != null) {
+            cohort.setCohortName(dto.getCohortName());
+        }
+        if (dto.getBatchCode() != null) {
+            cohort.setBatchCode(dto.getBatchCode());
+        }
+        if (dto.getCandidateCount() != null) {
+            cohort.setCandidateCount(dto.getCandidateCount());
+        }
+        if (dto.getStartDate() != null) {
+            cohort.setStartDate(dto.getStartDate());
+        }
         if (dto.getStatus() != null) {
             cohort.setStatus(dto.getStatus());
         }
@@ -79,6 +91,9 @@ public class CohortService {
         if (!cohortRepository.existsById(id)) {
             throw new ResourceNotFoundException("Cohort not found with id: " + id);
         }
+        mappingRepository.deleteByCohortCohortId(id);
+        shortlistRepository.deleteByCohortCohortId(id);
+        candidateRepository.deleteByCohortCohortId(id);
         cohortRepository.deleteById(id);
     }
 

@@ -56,13 +56,13 @@ public class MappingService {
         Evaluator evaluator = evaluatorRepository.findById(request.getEvaluatorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Evaluator not found with id: " + request.getEvaluatorId()));
         
-        validateMappingRules(cohort, candidate, evaluator, request.getRound());
+        int attempt = request.getAttempt() != null ? request.getAttempt() : 1;
+        validateMappingRules(cohort, candidate, evaluator, request.getRound(), attempt, null);
         
         String email = SecurityContextHolder.getContext().getAuthentication() != null ? 
                 SecurityContextHolder.getContext().getAuthentication().getName() : "admin@example.com";
         User poc = userRepository.findByEmail(email).orElse(null);
 
-        int attempt = request.getAttempt() != null ? request.getAttempt() : 1;
         List<EvaluatorMapping> candidateMappings = mappingRepository.findByCandidateCandidateId(candidate.getCandidateId());
         
         Optional<EvaluatorMapping> existingSuggested = candidateMappings.stream()
@@ -116,7 +116,7 @@ public class MappingService {
             long minWorkload = Long.MAX_VALUE;
 
             for (Evaluator eval : availableEvaluators) {
-                if (canMap(cohort, candidate, eval, round)) {
+                if (canMap(cohort, candidate, eval, round, nextAttempt, null)) {
                     long workload = mappingRepository.countByEvaluatorEvaluatorIdAndRound(eval.getEvaluatorId(), round);
                     if (workload < minWorkload) {
                         minWorkload = workload;
@@ -151,7 +151,7 @@ public class MappingService {
         EvaluatorMapping mapping = mappingRepository.findById(mappingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Mapping not found with id: " + mappingId));
         
-        validateMappingRules(mapping.getCohort(), mapping.getCandidate(), mapping.getEvaluator(), mapping.getRound());
+        validateMappingRules(mapping.getCohort(), mapping.getCandidate(), mapping.getEvaluator(), mapping.getRound(), mapping.getAttempt(), mapping.getMappingId());
         
         mapping.setStatus("CONFIRMED");
         mapping.setMappedAt(LocalDateTime.now());
@@ -159,6 +159,10 @@ public class MappingService {
     }
 
     public void validateMappingRules(Cohort cohort, Candidate candidate, Evaluator evaluator, String round) {
+        validateMappingRules(cohort, candidate, evaluator, round, null, null);
+    }
+
+    public void validateMappingRules(Cohort cohort, Candidate candidate, Evaluator evaluator, String round, Integer attempt, Long currentMappingId) {
         // RULE 1: Only evaluators assigned to the selected cohort can be mapped.
         Optional<EvaluatorShortlist> shortlist = shortlistRepository.findByCohortCohortIdAndEvaluatorEvaluatorId(cohort.getCohortId(), evaluator.getEvaluatorId());
         if (shortlist.isEmpty()) {
@@ -174,6 +178,16 @@ public class MappingService {
         List<EvaluatorMapping> existingMappings = mappingRepository.findByCandidateCandidateId(candidate.getCandidateId());
         
         for (EvaluatorMapping m : existingMappings) {
+            // Skip the current mapping record itself
+            if (currentMappingId != null && m.getMappingId() != null && m.getMappingId().equals(currentMappingId)) {
+                continue;
+            }
+
+            // Skip unconfirmed draft for the same attempt & round
+            if (attempt != null && m.getAttempt() != null && m.getAttempt().equals(attempt) && round.equalsIgnoreCase(m.getRound()) && !"CONFIRMED".equalsIgnoreCase(m.getStatus())) {
+                continue;
+            }
+
             if (m.getEvaluator().getEvaluatorId().equals(evaluator.getEvaluatorId())) {
                 // RULE 3: The evaluator used for a candidate's Interim interview MUST NOT be used for that candidate's Final interview.
                 if ("FINAL".equalsIgnoreCase(round) && "INTERIM".equalsIgnoreCase(m.getRound())) {
@@ -194,8 +208,12 @@ public class MappingService {
     }
 
     public boolean canMap(Cohort cohort, Candidate candidate, Evaluator evaluator, String round) {
+        return canMap(cohort, candidate, evaluator, round, null, null);
+    }
+
+    public boolean canMap(Cohort cohort, Candidate candidate, Evaluator evaluator, String round, Integer attempt, Long currentMappingId) {
         try {
-            validateMappingRules(cohort, candidate, evaluator, round);
+            validateMappingRules(cohort, candidate, evaluator, round, attempt, currentMappingId);
             return true;
         } catch (BusinessRuleException e) {
             return false;
@@ -203,8 +221,12 @@ public class MappingService {
     }
 
     public String checkWarning(Cohort cohort, Candidate candidate, Evaluator evaluator, String round) {
+        return checkWarning(cohort, candidate, evaluator, round, null, null);
+    }
+
+    public String checkWarning(Cohort cohort, Candidate candidate, Evaluator evaluator, String round, Integer attempt, Long currentMappingId) {
         try {
-            validateMappingRules(cohort, candidate, evaluator, round);
+            validateMappingRules(cohort, candidate, evaluator, round, attempt, currentMappingId);
             return null;
         } catch (BusinessRuleException e) {
             return e.getMessage();
@@ -239,7 +261,7 @@ public class MappingService {
         }
 
         if (m.getCohort() != null && m.getCandidate() != null && m.getEvaluator() != null) {
-            dto.setRuleWarning(checkWarning(m.getCohort(), m.getCandidate(), m.getEvaluator(), m.getRound()));
+            dto.setRuleWarning(checkWarning(m.getCohort(), m.getCandidate(), m.getEvaluator(), m.getRound(), m.getAttempt(), m.getMappingId()));
         }
 
         return dto;

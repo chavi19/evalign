@@ -40,7 +40,7 @@ public class MappingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(mappings);
     }
 
-    @PostMapping("/mappings/{id}/confirm")
+    @RequestMapping(value = "/mappings/{id}/confirm", method = { RequestMethod.PUT, RequestMethod.POST })
     public ResponseEntity<MappingDTO> confirmMapping(@PathVariable Long id) {
         return ResponseEntity.ok(mappingService.confirmMapping(id));
     }

@@ -271,3 +271,75 @@
   color: #dc2626;
   background: rgba(220, 38, 38, 0.1);
 }
+
+/* --------------------------------------------------------------------------
+   Cohort Status Dropdown & Action Buttons
+   -------------------------------------------------------------------------- */
+.status-dropdown-wrap {
+  display: inline-block;
+}
+
+.cohort-status-select {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.cohort-status-select.badge-green {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.cohort-status-select.badge-orange {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.cohort-status-select.badge-blue {
+  background-color: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.cohort-status-select.badge-red {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.cohort-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-outline-danger {
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.btn-outline-danger:hover {
+  background-color: #fef2f2;
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+

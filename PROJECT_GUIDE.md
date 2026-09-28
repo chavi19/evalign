@@ -18,6 +18,7 @@
 11. [Section K: Testing Suite & Verification](#section-k-testing-suite--verification)
 12. [Section L: Team Member Responsibilities & Interview Q&A Guide](#section-l-team-member-responsibilities--interview-qa-guide)
 13. [Section M: Step-by-Step Manual Recreation Plan (16 Stages)](#section-m-step-by-step-manual-recreation-plan-16-stages)
+14. [Section N: How to Verify UI Changes in MySQL & Browser DevTools](#section-n-how-to-verify-ui-changes-in-mysql--browser-devtools)
 
 ---
 
@@ -742,3 +743,135 @@ To rebuild this application from scratch, follow this exact sequence:
 14. **Stage 14 &mdash; Angular Pages**: Build `LoginComponent`, `HomeComponent` (evaluator dashboard), `CohortsComponent` (with candidate Excel dropzone), `MappingComponent` (interim/final tabs), `ReportsComponent`.
 15. **Stage 15 &mdash; Sample Datasets**: Generate `master_evaluators_sample.xlsx` and `candidates_sample.xlsx` in `sample-data/`.
 16. **Stage 16 &mdash; End-to-End Verification**: Run `mvn test` (30/30 passed) and `ng build` (0 warnings, 0 errors). Test all workflows in browser.
+
+---
+
+## Section N: How to Verify UI Changes in MySQL & Browser DevTools
+
+This section provides exact SQL verification commands and browser debugging instructions to confirm that all UI actions persist to the MySQL database in real time.
+
+### 1. Verification of User Registration & Login (Multi-POC Data Sharing)
+
+When a POC registers or logs in, the user record is stored with BCrypt password hashing:
+
+```sql
+-- 1. Check all registered POC users and their creation timestamps
+SELECT user_id, name, email, role, created_at, SUBSTRING(password_hash, 1, 15) AS hash_prefix 
+FROM users;
+
+-- 2. Confirm both POCs (e.g. Ramya and Nihar) share access to the same database
+SELECT user_id, name, email, role FROM users WHERE role = 'POC';
+```
+
+### 2. Verification of Cohort Lifecycle, Status Transitions & Deletion
+
+When a POC creates a cohort, changes its status via the interactive dropdown, or deletes a batch:
+
+```sql
+-- 1. List all training cohort batches and their current status
+SELECT cohort_id, cohort_name, batch_code, status, candidate_count, start_date, poc_id 
+FROM cohorts 
+ORDER BY cohort_id DESC;
+
+-- 2. Verify status updates (e.g. Active -> Mapping in Progress -> Completed)
+SELECT cohort_id, cohort_name, status 
+FROM cohorts 
+WHERE cohort_id = 1;
+
+-- 3. Verify safe cascade deletion of dependent records when a cohort is deleted
+-- (Should return 0 rows for the deleted cohortId across all 4 tables)
+SELECT COUNT(*) AS remaining_mappings FROM evaluator_mapping WHERE cohort_id = 1;
+SELECT COUNT(*) AS remaining_shortlist FROM evaluator_shortlist WHERE cohort_id = 1;
+SELECT COUNT(*) AS remaining_candidates FROM candidates WHERE cohort_id = 1;
+SELECT COUNT(*) AS remaining_cohort FROM cohorts WHERE cohort_id = 1;
+```
+
+### 3. Verification of Candidate Excel Upload & Cohort Isolation
+
+When candidate rosters (`candidates_sample.xlsx`) are uploaded into a batch:
+
+```sql
+-- 1. Check total candidates ingested for a specific cohort
+SELECT cohort_id, COUNT(*) AS total_candidates 
+FROM candidates 
+GROUP BY cohort_id;
+
+-- 2. Inspect candidate names assigned strictly to this cohort
+SELECT candidate_id, candidate_name, cohort_id, created_at 
+FROM candidates 
+WHERE cohort_id = 1 
+LIMIT 10;
+
+-- 3. Verify Candidate Isolation: confirm candidate IDs do NOT overlap between batches
+SELECT candidate_name, COUNT(DISTINCT cohort_id) AS batch_count 
+FROM candidates 
+GROUP BY candidate_name 
+HAVING batch_count > 1;
+```
+
+### 4. Verification of Evaluator Status Updates & Dynamic Overlap
+
+When a POC modifies an evaluator's leave window or status reason on the Evaluator dashboard:
+
+```sql
+-- 1. Check evaluators with temporary leave windows or permanent exits
+SELECT evaluator_id, emp_id, name, vertical, domain, availability_status, unavailable_from, unavailable_to, status_reason, is_permanent 
+FROM evaluators 
+WHERE status_reason IS NOT NULL OR is_permanent = TRUE;
+
+-- 2. Check available evaluator count for a specific interview date window
+SELECT COUNT(*) AS available_count 
+FROM evaluators 
+WHERE is_permanent = FALSE 
+  AND NOT (DATE('2026-05-12') <= unavailable_to AND DATE('2026-05-15') >= unavailable_from);
+```
+
+### 5. Verification of Shortlists and Mapping Governance (Interim vs Final)
+
+When a POC shortlists evaluators, executes auto-mapping, or confirms candidate assignments:
+
+```sql
+-- 1. View all shortlisted evaluators for a cohort
+SELECT s.shortlist_id, s.cohort_id, e.emp_id, e.name AS evaluator_name, e.domain, e.availability_status 
+FROM evaluator_shortlist s
+JOIN evaluators e ON s.evaluator_id = e.evaluator_id
+WHERE s.cohort_id = 1;
+
+-- 2. Inspect all mappings across Interim and Final rounds
+SELECT m.mapping_id, m.cohort_id, c.candidate_name, e.name AS evaluator_name, m.round, m.attempt, m.status, m.mapped_at 
+FROM evaluator_mapping m
+JOIN candidates c ON m.candidate_id = c.candidate_id
+JOIN evaluators e ON m.evaluator_id = e.evaluator_id
+WHERE m.cohort_id = 1
+ORDER BY m.candidate_id, m.round, m.attempt;
+
+-- 3. Verify Business Rule 3 (Interim vs Final Isolation): Check that no candidate has the same evaluator for both rounds
+SELECT m1.candidate_id, c.candidate_name, m1.evaluator_id AS interim_eval_id, m2.evaluator_id AS final_eval_id
+FROM evaluator_mapping m1
+JOIN evaluator_mapping m2 ON m1.candidate_id = m2.candidate_id
+JOIN candidates c ON m1.candidate_id = c.candidate_id
+WHERE m1.round = 'INTERIM' AND m2.round = 'FINAL' AND m1.evaluator_id = m2.evaluator_id;
+-- (Expected result: 0 rows)
+
+-- 4. Verify Business Rule 4 (Retake Evaluator Exclusion): Check that repeated attempts do not reuse evaluators
+SELECT m1.candidate_id, c.candidate_name, m1.round, m1.attempt AS attempt_1, m2.attempt AS attempt_2, m1.evaluator_id 
+FROM evaluator_mapping m1
+JOIN evaluator_mapping m2 ON m1.candidate_id = m2.candidate_id AND m1.round = m2.round
+JOIN candidates c ON m1.candidate_id = c.candidate_id
+WHERE m1.attempt < m2.attempt AND m1.evaluator_id = m2.evaluator_id;
+-- (Expected result: 0 rows)
+```
+
+### 6. Inspecting Real Backend REST Calls in Chrome DevTools
+
+To verify that the Angular UI is issuing real network requests rather than using in-memory mock states:
+
+1. Open Chrome DevTools (`F12` or `Ctrl + Shift + I`) and click the **Network** tab.
+2. Check the **Fetch/XHR** filter.
+3. Observe the following endpoints as you interact with the UI:
+   - **Changing Cohort Status Dropdown**: Inspect `PUT /api/cohorts/{id}` with payload `{"status": "Mapping in Progress"}` and response status `200 OK`.
+   - **Clicking Delete Cohort**: Inspect `DELETE /api/cohorts/{id}` with response status `204 No Content`.
+   - **Auto-Mapping Candidates**: Inspect `POST /api/cohorts/{id}/auto-map` returning list of `MappingDTO` with status `201 Created`.
+   - **Confirming Mapping**: Inspect `PUT /api/mappings/{id}/confirm` returning updated DTO with `status: "CONFIRMED"` and `ruleWarning: null`.
+4. Check **Request Headers** for `Authorization: Bearer <jwt_token>` on every API call.
+

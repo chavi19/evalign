@@ -29,7 +29,7 @@ export class CohortsComponent implements OnInit {
     cohortName: '',
     batchCode: '',
     startDate: new Date().toISOString().substring(0, 10),
-    status: 'ACTIVE',
+    status: 'Active',
     candidateCount: 0
   };
 
@@ -66,13 +66,66 @@ export class CohortsComponent implements OnInit {
       );
     }
     if (this.statusFilter && this.statusFilter !== 'All') {
-      result = result.filter(c => c.status && c.status.toUpperCase() === this.statusFilter.toUpperCase());
+      const target = this.normalizeStatus(this.statusFilter);
+      result = result.filter(c => this.normalizeStatus(c.status) === target);
     }
     this.filteredCohorts = result;
   }
 
+  normalizeStatus(status?: string): string {
+    const s = (status || '').trim().toLowerCase().replace(/_/g, ' ');
+    if (s === 'active') return 'active';
+    if (s.includes('progress')) return 'mapping in progress';
+    if (s === 'completed') return 'completed';
+    if (s.includes('not started') || s === 'not_started') return 'not started';
+    return s;
+  }
+
   openMapping(cohortId: number): void {
     this.router.navigate(['/mapping', cohortId]);
+  }
+
+  onStatusChange(cohort: Cohort, newStatus: string): void {
+    if (!cohort.cohortId || cohort.status === newStatus) return;
+
+    const oldStatus = cohort.status;
+    cohort.status = newStatus;
+
+    this.cohortService.updateCohort(cohort.cohortId, {
+      cohortId: cohort.cohortId,
+      cohortName: cohort.cohortName,
+      batchCode: cohort.batchCode,
+      startDate: cohort.startDate,
+      status: newStatus,
+      candidateCount: cohort.candidateCount
+    }).subscribe({
+      next: (updated) => {
+        cohort.status = updated.status || newStatus;
+        this.applyFilter();
+        this.showNotification(`Status updated to '${cohort.status}' for ${cohort.cohortName}`);
+      },
+      error: (err) => {
+        cohort.status = oldStatus;
+        this.showNotification(`Failed to update status: ${err.error?.message || 'Server error'}`, 'error');
+      }
+    });
+  }
+
+  deleteCohort(cohort: Cohort): void {
+    if (!cohort.cohortId) return;
+
+    const confirmed = window.confirm('Delete this cohort? This will remove its candidates, shortlist entries, and mappings.');
+    if (!confirmed) return;
+
+    this.cohortService.deleteCohort(cohort.cohortId).subscribe({
+      next: () => {
+        this.showNotification(`Cohort '${cohort.cohortName}' deleted successfully.`);
+        this.loadCohorts();
+      },
+      error: (err) => {
+        this.showNotification(`Failed to delete cohort: ${err.error?.message || 'Server error'}`, 'error');
+      }
+    });
   }
 
   openNewCohortModal(): void {
@@ -91,7 +144,7 @@ export class CohortsComponent implements OnInit {
       cohortName: '',
       batchCode: '',
       startDate: new Date().toISOString().substring(0, 10),
-      status: 'ACTIVE',
+      status: 'Active',
       candidateCount: 0
     };
   }
@@ -151,15 +204,12 @@ export class CohortsComponent implements OnInit {
   }
 
   getStatusClass(status: string): string {
-    const s = (status || '').toUpperCase();
+    const s = this.normalizeStatus(status);
     switch(s) {
-      case 'ACTIVE': return 'badge-green';
-      case 'COMPLETED': return 'badge-blue';
-      case 'IN_PROGRESS':
-      case 'MAPPING IN PROGRESS':
-      case 'IN PROGRESS': return 'badge-orange';
-      case 'NOT_STARTED':
-      case 'NOT STARTED': return 'badge-red';
+      case 'active': return 'badge-green';
+      case 'completed': return 'badge-blue';
+      case 'mapping in progress': return 'badge-orange';
+      case 'not started': return 'badge-red';
       default: return 'badge-blue';
     }
   }

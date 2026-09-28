@@ -8,4 +8,5 @@ public interface EvaluatorMappingRepository extends JpaRepository<EvaluatorMappi
     List<EvaluatorMapping> findByCohortCohortId(Long cohortId);
     List<EvaluatorMapping> findByCandidateCandidateId(Long candidateId);
     long countByEvaluatorEvaluatorIdAndRound(Long evaluatorId, String round);
+    void deleteByCohortCohortId(Long cohortId);
 }

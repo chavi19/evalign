@@ -45,10 +45,10 @@
       <label>Status Filter:</label>
       <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilter()" class="console-select">
         <option value="All">All Cohort Statuses</option>
-        <option value="ACTIVE">Active Only</option>
-        <option value="IN_PROGRESS">Mapping in Progress</option>
-        <option value="COMPLETED">Completed</option>
-        <option value="NOT_STARTED">Not Started</option>
+        <option value="Active">Active</option>
+        <option value="Mapping in Progress">Mapping in Progress</option>
+        <option value="Completed">Completed</option>
+        <option value="Not Started">Not Started</option>
       </select>
     </div>
 
@@ -67,7 +67,7 @@
           <th>MAPPING PROGRESS</th>
           <th>START DATE</th>
           <th>STATUS</th>
-          <th class="text-center">ACTION</th>
+          <th class="text-center">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
@@ -103,15 +103,33 @@
             <span class="date-tag">{{ cohort.startDate | date:'dd-MMM-yyyy' }}</span>
           </td>
           <td>
-            <span class="badge" [ngClass]="getStatusClass(cohort.status)">
-              {{ cohort.status }}
-            </span>
+            <div class="status-dropdown-wrap">
+              <select class="cohort-status-select" 
+                      [ngClass]="getStatusClass(cohort.status)"
+                      [ngModel]="cohort.status" 
+                      (ngModelChange)="onStatusChange(cohort, $event)"
+                      title="Change cohort status">
+                <option value="Active">Active</option>
+                <option value="Mapping in Progress">Mapping in Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Not Started">Not Started</option>
+              </select>
+            </div>
           </td>
           <td class="text-center">
-            <button class="btn btn-sm btn-outline-primary" (click)="openMapping(cohort.cohortId)">
-              <span>Open Mapping</span>
-              <span>&rarr;</span>
-            </button>
+            <div class="cohort-actions-cell">
+              <button class="btn btn-sm btn-outline-primary" (click)="openMapping(cohort.cohortId)" title="Open mapping console">
+                <span>Open Mapping</span>
+                <span>&rarr;</span>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteCohort(cohort)" title="Delete this cohort batch">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>Delete</span>
+              </button>
+            </div>
           </td>
         </tr>
         <tr *ngIf="filteredCohorts.length === 0">
@@ -165,10 +183,10 @@
         <div class="form-group">
           <label>Status</label>
           <select [(ngModel)]="newCohort.status" class="form-select">
-            <option value="ACTIVE">Active</option>
-            <option value="NOT_STARTED">Not started</option>
-            <option value="IN_PROGRESS">Mapping in progress</option>
-            <option value="COMPLETED">Completed</option>
+            <option value="Active">Active</option>
+            <option value="Mapping in Progress">Mapping in Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Not Started">Not Started</option>
           </select>
         </div>
       </div>

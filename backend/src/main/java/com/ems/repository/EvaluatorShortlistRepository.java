@@ -7,4 +7,5 @@ import java.util.Optional;
 public interface EvaluatorShortlistRepository extends JpaRepository<EvaluatorShortlist, Long> {
     List<EvaluatorShortlist> findByCohortCohortId(Long cohortId);
     Optional<EvaluatorShortlist> findByCohortCohortIdAndEvaluatorEvaluatorId(Long cohortId, Long evaluatorId);
+    void deleteByCohortCohortId(Long cohortId);
 }
