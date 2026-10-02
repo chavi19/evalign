@@ -102,13 +102,11 @@ public class CohortService {
         dto.setCohortId(cohort.getCohortId());
         dto.setCohortName(cohort.getCohortName());
         dto.setBatchCode(cohort.getBatchCode());
-        int realCandCount = candidateRepository.findByCohortCohortId(cohort.getCohortId()).size();
-        dto.setCandidateCount(realCandCount > 0 ? realCandCount : (cohort.getCandidateCount() != null ? cohort.getCandidateCount() : 0));
+        int count = (int) candidateRepository.countByCohortCohortId(cohort.getCohortId());
+        dto.setCandidateCount(count > 0 ? count : (cohort.getCandidateCount() != null ? cohort.getCandidateCount() : 0));
         dto.setStartDate(cohort.getStartDate());
         dto.setStatus(cohort.getStatus());
-        long mappedCount = mappingRepository.findByCohortCohortId(cohort.getCohortId()).stream()
-                .filter(m -> "CONFIRMED".equalsIgnoreCase(m.getStatus()))
-                .map(m -> m.getCandidate().getCandidateId()).distinct().count();
+        long mappedCount = mappingRepository.countConfirmedMappedCandidatesByCohortCohortId(cohort.getCohortId());
         dto.setEvaluatorsMapped((int) mappedCount);
         return dto;
     }

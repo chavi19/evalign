@@ -5,5 +5,6 @@ import java.util.List;
 
 public interface CandidateRepository extends JpaRepository<Candidate, Long> {
     List<Candidate> findByCohortCohortId(Long cohortId);
+    long countByCohortCohortId(Long cohortId);
     void deleteByCohortCohortId(Long cohortId);
 }

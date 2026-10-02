@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { MappingService } from '../../services/mapping.service';
 import { CohortService } from '../../services/cohort.service';
 import { Mapping } from '../../models/mapping.model';
@@ -33,6 +34,8 @@ interface MappingRow {
   styleUrls: ['./mapping.component.css']
 })
 export class MappingComponent implements OnInit {
+  cohorts: Cohort[] = [];
+  selectedCohortId: number | null = null;
   cohortId: number = 0;
   cohort: Cohort | null = null;
   activeTab: 'INTERIM' | 'FINAL' = 'INTERIM';
@@ -47,20 +50,13 @@ export class MappingComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private mappingService: MappingService,
     private cohortService: CohortService
   ) {}
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const idParam = params.get('cohortId');
-      if (idParam) {
-        this.cohortId = Number(idParam);
-        this.loadCohortData();
-        this.loadShortlist();
-        this.loadCandidatesAndMappings();
-      }
-    });
+    this.loadCohortsList();
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'warning' = 'success'): void {
@@ -70,47 +66,107 @@ export class MappingComponent implements OnInit {
     }, 4500);
   }
 
-  loadCohortData(): void {
-    this.cohortService.getCohort(this.cohortId).subscribe({
-      next: (res) => this.cohort = res,
-      error: (err) => console.error('Failed to load cohort', err)
-    });
-  }
-
-  loadShortlist(): void {
-    this.cohortService.getShortlist(this.cohortId).subscribe({
-      next: (res) => this.shortlistedEvaluators = res || [],
-      error: (err) => console.error('Failed to load shortlist', err)
-    });
-  }
-
-  loadCandidatesAndMappings(): void {
-    this.loading = true;
-    this.cohortService.getCandidates(this.cohortId).subscribe({
-      next: (cands) => {
-        this.candidates = cands || [];
-        this.mappingService.getMappings(this.cohortId, this.activeTab).subscribe({
-          next: (maps) => {
-            this.mappings = maps || [];
-            this.buildTableRows();
-            this.loading = false;
-          },
-          error: (err) => {
-            this.loading = false;
-            console.error('Failed to load mappings', err);
+  loadCohortsList(): void {
+    this.cohortService.getCohorts().subscribe({
+      next: (cohortsList) => {
+        this.cohorts = cohortsList || [];
+        this.route.paramMap.subscribe(params => {
+          const idParam = params.get('cohortId');
+          if (idParam) {
+            const parsedId = Number(idParam);
+            const exists = this.cohorts.some(c => c.cohortId === parsedId);
+            if (exists) {
+              this.selectedCohortId = parsedId;
+              this.cohortId = parsedId;
+              this.loadCohortAllData(this.cohortId);
+            } else {
+              this.selectedCohortId = null;
+              this.cohortId = 0;
+              this.cohort = null;
+              this.candidates = [];
+              this.shortlistedEvaluators = [];
+              this.mappings = [];
+              this.tableRows = [];
+              this.showNotification('Selected cohort does not exist. Please select a valid cohort.', 'warning');
+            }
+          } else {
+            this.selectedCohortId = null;
+            this.cohortId = 0;
+            this.cohort = null;
+            this.candidates = [];
+            this.shortlistedEvaluators = [];
+            this.mappings = [];
+            this.tableRows = [];
           }
         });
       },
       error: (err) => {
+        console.error('Failed to load cohorts', err);
+        this.showNotification('Failed to load cohorts list', 'error');
+      }
+    });
+  }
+
+  onCohortSelected(cohortId: any): void {
+    if (!cohortId) {
+      this.selectedCohortId = null;
+      this.cohortId = 0;
+      this.cohort = null;
+      this.candidates = [];
+      this.shortlistedEvaluators = [];
+      this.mappings = [];
+      this.tableRows = [];
+      this.router.navigate(['/mapping'], { replaceUrl: true });
+      return;
+    }
+    const numId = Number(cohortId);
+    this.selectedCohortId = numId;
+    this.cohortId = numId;
+    this.router.navigate(['/mapping', numId], { replaceUrl: true });
+    this.loadCohortAllData(numId);
+  }
+
+  loadCohortAllData(cohortId: number): void {
+    this.loading = true;
+    forkJoin({
+      cohort: this.cohortService.getCohort(cohortId),
+      shortlist: this.cohortService.getShortlist(cohortId),
+      candidates: this.cohortService.getCandidates(cohortId),
+      mappings: this.mappingService.getMappings(cohortId, this.activeTab)
+    }).subscribe({
+      next: (res) => {
+        this.cohort = res.cohort;
+        this.shortlistedEvaluators = res.shortlist || [];
+        this.candidates = res.candidates || [];
+        this.mappings = res.mappings || [];
+        this.buildTableRows();
         this.loading = false;
-        console.error('Failed to load candidates', err);
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Failed to load cohort details', err);
+        this.showNotification('Failed to load cohort mapping data', 'error');
       }
     });
   }
 
   setTab(tab: 'INTERIM' | 'FINAL'): void {
+    if (this.activeTab === tab) return;
     this.activeTab = tab;
-    this.loadCandidatesAndMappings();
+    if (this.cohortId) {
+      this.loading = true;
+      this.mappingService.getMappings(this.cohortId, this.activeTab).subscribe({
+        next: (maps) => {
+          this.mappings = maps || [];
+          this.buildTableRows();
+          this.loading = false;
+        },
+        error: (err) => {
+          this.loading = false;
+          console.error('Failed to load mappings', err);
+        }
+      });
+    }
   }
 
   buildTableRows(): void {
@@ -164,6 +220,7 @@ export class MappingComponent implements OnInit {
   }
 
   autoMap(): void {
+    if (!this.cohortId || this.loading) return;
     this.loading = true;
     this.mappingService.autoMap(this.cohortId, this.activeTab).subscribe({
       next: (maps) => {
@@ -182,7 +239,7 @@ export class MappingComponent implements OnInit {
 
   onEvaluatorSelected(row: MappingRow, evalId: any): void {
     const selectedId = Number(evalId);
-    if (!selectedId) return;
+    if (!selectedId || this.loading) return;
     
     const chosenEval = this.shortlistedEvaluators.find(e => e.evaluatorId === selectedId);
     if (chosenEval) {
@@ -190,7 +247,7 @@ export class MappingComponent implements OnInit {
       row.evaluatorName = chosenEval.name;
     }
 
-    // Save manual mapping
+    this.loading = true;
     this.mappingService.createMapping({
       cohortId: this.cohortId,
       candidateId: row.candidateId,
@@ -206,6 +263,7 @@ export class MappingComponent implements OnInit {
         row.interimEvaluatorName = res.interimEvaluatorName;
         row.interimEvaluatorId = res.interimEvaluatorId;
         row.isEditing = false;
+        this.loading = false;
         if (res.ruleWarning) {
           this.showNotification(res.ruleWarning, 'warning');
         } else {
@@ -213,6 +271,7 @@ export class MappingComponent implements OnInit {
         }
       },
       error: (err) => {
+        this.loading = false;
         const msg = err.error?.message || 'Failed to assign evaluator';
         row.ruleWarning = msg;
         this.showNotification(msg, 'error');
@@ -221,8 +280,8 @@ export class MappingComponent implements OnInit {
   }
 
   confirmMapping(row: MappingRow): void {
-    if (!row.mappingId) {
-      this.showNotification('Please select an evaluator first', 'warning');
+    if (!row.mappingId || this.loading) {
+      if (!row.mappingId) this.showNotification('Please select an evaluator first', 'warning');
       return;
     }
 
@@ -231,13 +290,17 @@ export class MappingComponent implements OnInit {
       return;
     }
 
+    this.loading = true;
     this.mappingService.confirmMapping(row.mappingId).subscribe({
       next: (res) => {
         row.status = 'CONFIRMED';
         row.ruleWarning = null;
+        row.isEditing = false;
+        this.loading = false;
         this.showNotification(`Mapping confirmed for ${row.candidateName}!`);
       },
       error: (err) => {
+        this.loading = false;
         const msg = err.error?.message || 'Failed to confirm mapping';
         row.ruleWarning = msg;
         this.showNotification(msg, 'error');
@@ -248,4 +311,9 @@ export class MappingComponent implements OnInit {
   enableReassign(row: MappingRow): void {
     row.isEditing = true;
   }
+
+  cancelReassign(row: MappingRow): void {
+    row.isEditing = false;
+  }
 }
+

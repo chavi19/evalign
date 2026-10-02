@@ -12,9 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,10 +36,20 @@ public class MappingService {
             throw new ResourceNotFoundException("Cohort not found with id: " + cohortId);
         }
         List<EvaluatorMapping> existingMappings = mappingRepository.findByCohortCohortIdAndRound(cohortId, round);
+        List<EvaluatorMapping> allCohortMappings = mappingRepository.findByCohortCohortId(cohortId);
+        List<EvaluatorShortlist> shortlist = shortlistRepository.findByCohortCohortId(cohortId);
+
+        Set<Long> shortlistedEvaluatorIds = shortlist.stream()
+                .map(s -> s.getEvaluator().getEvaluatorId())
+                .collect(Collectors.toSet());
+
+        Map<Long, List<EvaluatorMapping>> candidateMappingsMap = allCohortMappings.stream()
+                .filter(m -> m.getCandidate() != null)
+                .collect(Collectors.groupingBy(m -> m.getCandidate().getCandidateId()));
 
         List<MappingDTO> result = new ArrayList<>();
         for (EvaluatorMapping m : existingMappings) {
-            result.add(mapToDTO(m));
+            result.add(mapToDTO(m, shortlistedEvaluatorIds, candidateMappingsMap));
         }
 
         return result;
@@ -57,19 +65,20 @@ public class MappingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Evaluator not found with id: " + request.getEvaluatorId()));
         
         int attempt = request.getAttempt() != null ? request.getAttempt() : 1;
-        validateMappingRules(cohort, candidate, evaluator, request.getRound(), attempt, null);
+        List<EvaluatorMapping> candidateMappings = mappingRepository.findByCandidateCandidateId(candidate.getCandidateId());
+        
+        Optional<EvaluatorMapping> existingAttemptMapping = candidateMappings.stream()
+                .filter(m -> request.getRound().equalsIgnoreCase(m.getRound()) && m.getAttempt().equals(attempt))
+                .findFirst();
+
+        Long currentMappingId = existingAttemptMapping.map(EvaluatorMapping::getMappingId).orElse(null);
+        validateMappingRules(cohort, candidate, evaluator, request.getRound(), attempt, currentMappingId);
         
         String email = SecurityContextHolder.getContext().getAuthentication() != null ? 
                 SecurityContextHolder.getContext().getAuthentication().getName() : "admin@example.com";
         User poc = userRepository.findByEmail(email).orElse(null);
 
-        List<EvaluatorMapping> candidateMappings = mappingRepository.findByCandidateCandidateId(candidate.getCandidateId());
-        
-        Optional<EvaluatorMapping> existingSuggested = candidateMappings.stream()
-                .filter(m -> request.getRound().equalsIgnoreCase(m.getRound()) && m.getAttempt().equals(attempt) && !"CONFIRMED".equalsIgnoreCase(m.getStatus()))
-                .findFirst();
-
-        EvaluatorMapping mapping = existingSuggested.orElse(new EvaluatorMapping());
+        EvaluatorMapping mapping = existingAttemptMapping.orElse(new EvaluatorMapping());
         mapping.setCohort(cohort);
         mapping.setCandidate(candidate);
         mapping.setEvaluator(evaluator);
@@ -126,11 +135,11 @@ public class MappingService {
             }
 
             if (bestEvaluator != null) {
-                Optional<EvaluatorMapping> existingSuggested = candidateMappings.stream()
-                        .filter(m -> round.equalsIgnoreCase(m.getRound()) && m.getAttempt().equals(nextAttempt) && !"CONFIRMED".equalsIgnoreCase(m.getStatus()))
+                Optional<EvaluatorMapping> existingAttemptMapping = candidateMappings.stream()
+                        .filter(m -> round.equalsIgnoreCase(m.getRound()) && m.getAttempt().equals(nextAttempt))
                         .findFirst();
 
-                EvaluatorMapping mapping = existingSuggested.orElse(new EvaluatorMapping());
+                EvaluatorMapping mapping = existingAttemptMapping.orElse(new EvaluatorMapping());
                 mapping.setCohort(cohort);
                 mapping.setCandidate(candidate);
                 mapping.setEvaluator(bestEvaluator);
@@ -234,6 +243,10 @@ public class MappingService {
     }
 
     public MappingDTO mapToDTO(EvaluatorMapping m) {
+        return mapToDTO(m, null, null);
+    }
+
+    public MappingDTO mapToDTO(EvaluatorMapping m, Set<Long> shortlistedEvaluatorIds, Map<Long, List<EvaluatorMapping>> candidateMappingsMap) {
         MappingDTO dto = new MappingDTO();
         dto.setMappingId(m.getMappingId());
         dto.setCohortId(m.getCohort() != null ? m.getCohort().getCohortId() : null);
@@ -250,7 +263,10 @@ public class MappingService {
         dto.setEvaluatorAvailability(m.getEvaluator() != null ? m.getEvaluator().getAvailabilityStatus() : "");
 
         if (m.getCandidate() != null) {
-            List<EvaluatorMapping> candidateMappings = mappingRepository.findByCandidateCandidateId(m.getCandidate().getCandidateId());
+            List<EvaluatorMapping> candidateMappings = (candidateMappingsMap != null)
+                    ? candidateMappingsMap.getOrDefault(m.getCandidate().getCandidateId(), Collections.emptyList())
+                    : mappingRepository.findByCandidateCandidateId(m.getCandidate().getCandidateId());
+
             candidateMappings.stream()
                     .filter(map -> "INTERIM".equalsIgnoreCase(map.getRound()))
                     .findFirst()
@@ -258,12 +274,48 @@ public class MappingService {
                         dto.setInterimEvaluatorId(interimMap.getEvaluator().getEvaluatorId());
                         dto.setInterimEvaluatorName(interimMap.getEvaluator().getName());
                     });
-        }
 
-        if (m.getCohort() != null && m.getCandidate() != null && m.getEvaluator() != null) {
-            dto.setRuleWarning(checkWarning(m.getCohort(), m.getCandidate(), m.getEvaluator(), m.getRound(), m.getAttempt(), m.getMappingId()));
+            if (m.getCohort() != null && m.getEvaluator() != null) {
+                if (shortlistedEvaluatorIds != null) {
+                    dto.setRuleWarning(checkWarningInMemory(m, shortlistedEvaluatorIds, candidateMappings));
+                } else {
+                    dto.setRuleWarning(checkWarning(m.getCohort(), m.getCandidate(), m.getEvaluator(), m.getRound(), m.getAttempt(), m.getMappingId()));
+                }
+            }
         }
 
         return dto;
+    }
+
+    private String checkWarningInMemory(EvaluatorMapping m, Set<Long> shortlistedEvaluatorIds, List<EvaluatorMapping> existingCandidateMappings) {
+        if (!shortlistedEvaluatorIds.contains(m.getEvaluator().getEvaluatorId())) {
+            return "Evaluator is not assigned to this cohort";
+        }
+        if (!"AVAILABLE".equalsIgnoreCase(m.getEvaluator().getAvailabilityStatus())) {
+            return "Evaluator is not available";
+        }
+        for (EvaluatorMapping other : existingCandidateMappings) {
+            if (other.getMappingId() != null && other.getMappingId().equals(m.getMappingId())) {
+                continue;
+            }
+            if (m.getAttempt() != null && m.getAttempt().equals(other.getAttempt()) && m.getRound().equalsIgnoreCase(other.getRound()) && !"CONFIRMED".equalsIgnoreCase(other.getStatus())) {
+                continue;
+            }
+            if (other.getEvaluator().getEvaluatorId().equals(m.getEvaluator().getEvaluatorId())) {
+                if ("FINAL".equalsIgnoreCase(m.getRound()) && "INTERIM".equalsIgnoreCase(other.getRound())) {
+                    return "Blocked: same evaluator as Interim";
+                }
+                if ("INTERIM".equalsIgnoreCase(m.getRound()) && "FINAL".equalsIgnoreCase(other.getRound())) {
+                    return "Blocked: same evaluator as Final";
+                }
+                if ("FINAL".equalsIgnoreCase(m.getRound()) && "FINAL".equalsIgnoreCase(other.getRound())) {
+                    return "New evaluator required";
+                }
+                if ("INTERIM".equalsIgnoreCase(m.getRound()) && "INTERIM".equalsIgnoreCase(other.getRound()) && "CONFIRMED".equalsIgnoreCase(other.getStatus())) {
+                    return "New evaluator required";
+                }
+            }
+        }
+        return null;
     }
 }
