@@ -25,6 +25,12 @@ export class ReportsComponent implements OnInit {
     search: ''
   };
 
+  loading: boolean = false;
+  loadingMore: boolean = false;
+  hasMore: boolean = false;
+  page: number = 0;
+  pageSize: number = 15;
+
   constructor(
     private reportService: ReportService,
     private cohortService: CohortService
@@ -32,7 +38,7 @@ export class ReportsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCohorts();
-    this.loadReports();
+    this.loadReports(true);
   }
 
   loadCohorts(): void {
@@ -42,44 +48,52 @@ export class ReportsComponent implements OnInit {
     });
   }
 
-  loadReports(): void {
-    this.reportService.getReports().subscribe({
+  loadReports(reset: boolean = true): void {
+    if (reset) {
+      this.page = 0;
+      this.loading = true;
+      this.reports = [];
+      this.filteredReports = [];
+    } else {
+      this.loadingMore = true;
+    }
+
+    this.reportService.getReports({
+      page: this.page,
+      size: this.pageSize,
+      search: this.filters.search ? this.filters.search.trim() : undefined,
+      cohortName: this.filters.cohortName !== 'All' ? this.filters.cohortName : undefined,
+      stage: this.filters.stage !== 'All' ? this.filters.stage : undefined,
+      status: this.filters.status !== 'All' ? this.filters.status : undefined
+    }).subscribe({
       next: (res) => {
-        this.reports = res || [];
-        this.applyFilters();
+        const batch = res || [];
+        if (reset) {
+          this.reports = batch;
+        } else {
+          this.reports = [...this.reports, ...batch];
+        }
+        this.filteredReports = this.reports;
+        this.hasMore = batch.length === this.pageSize;
+        this.loading = false;
+        this.loadingMore = false;
       },
-      error: (err) => console.error('Failed to load reports', err)
+      error: (err) => {
+        console.error('Failed to load reports', err);
+        this.loading = false;
+        this.loadingMore = false;
+      }
     });
   }
 
-  applyFilters(): void {
-    let list = [...this.reports];
-
-    if (this.filters.search) {
-      const q = this.filters.search.toLowerCase();
-      list = list.filter(r => 
-        (r.candidateName && r.candidateName.toLowerCase().includes(q)) ||
-        (r.evaluatorName && r.evaluatorName.toLowerCase().includes(q))
-      );
-    }
-
-    if (this.filters.cohortName && this.filters.cohortName !== 'All') {
-      list = list.filter(r => r.cohortName === this.filters.cohortName);
-    }
-
-    if (this.filters.stage && this.filters.stage !== 'All') {
-      list = list.filter(r => r.round && r.round.toUpperCase() === this.filters.stage.toUpperCase());
-    }
-
-    if (this.filters.status && this.filters.status !== 'All') {
-      list = list.filter(r => r.status && r.status.toUpperCase() === this.filters.status.toUpperCase());
-    }
-
-    this.filteredReports = list;
+  viewMore(): void {
+    if (!this.hasMore || this.loading || this.loadingMore) return;
+    this.page++;
+    this.loadReports(false);
   }
 
   onFilterChange(): void {
-    this.applyFilters();
+    this.loadReports(true);
   }
 
   exportCsv(): void {

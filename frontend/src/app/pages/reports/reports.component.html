@@ -61,6 +61,12 @@
     </div>
   </div>
 
+  <!-- Loading Indicator Banner -->
+  <div class="loading-state-banner" *ngIf="loading">
+    <div class="loading-spinner"></div>
+    <span>Loading, please wait...</span>
+  </div>
+
   <!-- Audit Table -->
   <div class="table-container">
     <table>
@@ -112,7 +118,7 @@
             <span class="date-tag">{{ r.mappedAt ? (r.mappedAt | date:'dd-MMM-yyyy HH:mm') : 'System Seeded' }}</span>
           </td>
         </tr>
-        <tr *ngIf="filteredReports.length === 0">
+        <tr *ngIf="filteredReports.length === 0 && !loading">
           <td colspan="8" class="text-center empty-state">
             <div class="empty-state-content">
               <span class="empty-title">No audit records match the selected filters</span>
@@ -122,6 +128,14 @@
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Progressive View More Section -->
+  <div class="view-more-container" *ngIf="hasMore || loadingMore">
+    <button class="btn btn-secondary view-more-btn" (click)="viewMore()" [disabled]="loadingMore || loading">
+      <span *ngIf="!loadingMore">View More</span>
+      <span *ngIf="loadingMore">Loading, please wait...</span>
+    </button>
   </div>
 
 </div>

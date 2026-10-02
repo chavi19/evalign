@@ -33,10 +33,16 @@ export class CohortsComponent implements OnInit {
     candidateCount: 0
   };
 
+  loading: boolean = false;
+  loadingMore: boolean = false;
+  hasMore: boolean = false;
+  page: number = 0;
+  pageSize: number = 10;
+
   constructor(private cohortService: CohortService, private router: Router) {}
 
   ngOnInit(): void {
-    this.loadCohorts();
+    this.loadCohorts(true);
   }
 
   showNotification(message: string, type: 'success' | 'error' = 'success'): void {
@@ -46,30 +52,50 @@ export class CohortsComponent implements OnInit {
     }, 4500);
   }
 
-  loadCohorts(): void {
-    this.cohortService.getCohorts().subscribe({
+  loadCohorts(reset: boolean = true): void {
+    if (reset) {
+      this.page = 0;
+      this.loading = true;
+      this.cohorts = [];
+      this.filteredCohorts = [];
+    } else {
+      this.loadingMore = true;
+    }
+
+    this.cohortService.getCohorts({
+      page: this.page,
+      size: this.pageSize,
+      search: this.searchTerm ? this.searchTerm.trim() : undefined,
+      status: this.statusFilter !== 'All' ? this.statusFilter : undefined
+    }).subscribe({
       next: (res) => {
-        this.cohorts = res || [];
-        this.applyFilter();
+        const batch = res || [];
+        if (reset) {
+          this.cohorts = batch;
+        } else {
+          this.cohorts = [...this.cohorts, ...batch];
+        }
+        this.filteredCohorts = this.cohorts;
+        this.hasMore = batch.length === this.pageSize;
+        this.loading = false;
+        this.loadingMore = false;
       },
-      error: (err) => console.error('Failed to load cohorts', err)
+      error: (err) => {
+        console.error('Failed to load cohorts', err);
+        this.loading = false;
+        this.loadingMore = false;
+      }
     });
   }
 
+  viewMore(): void {
+    if (!this.hasMore || this.loading || this.loadingMore) return;
+    this.page++;
+    this.loadCohorts(false);
+  }
+
   applyFilter(): void {
-    let result = [...this.cohorts];
-    if (this.searchTerm) {
-      const term = this.searchTerm.toLowerCase();
-      result = result.filter(c => 
-        (c.cohortName && c.cohortName.toLowerCase().includes(term)) ||
-        (c.batchCode && c.batchCode.toLowerCase().includes(term))
-      );
-    }
-    if (this.statusFilter && this.statusFilter !== 'All') {
-      const target = this.normalizeStatus(this.statusFilter);
-      result = result.filter(c => this.normalizeStatus(c.status) === target);
-    }
-    this.filteredCohorts = result;
+    this.loadCohorts(true);
   }
 
   normalizeStatus(status?: string): string {
@@ -86,10 +112,11 @@ export class CohortsComponent implements OnInit {
   }
 
   onStatusChange(cohort: Cohort, newStatus: string): void {
-    if (!cohort.cohortId || cohort.status === newStatus) return;
+    if (!cohort.cohortId || cohort.status === newStatus || this.loading) return;
 
     const oldStatus = cohort.status;
     cohort.status = newStatus;
+    this.loading = true;
 
     this.cohortService.updateCohort(cohort.cohortId, {
       cohortId: cohort.cohortId,
@@ -101,28 +128,32 @@ export class CohortsComponent implements OnInit {
     }).subscribe({
       next: (updated) => {
         cohort.status = updated.status || newStatus;
-        this.applyFilter();
+        this.loading = false;
         this.showNotification(`Status updated to '${cohort.status}' for ${cohort.cohortName}`);
       },
       error: (err) => {
         cohort.status = oldStatus;
+        this.loading = false;
         this.showNotification(`Failed to update status: ${err.error?.message || 'Server error'}`, 'error');
       }
     });
   }
 
   deleteCohort(cohort: Cohort): void {
-    if (!cohort.cohortId) return;
+    if (!cohort.cohortId || this.loading) return;
 
     const confirmed = window.confirm('Delete this cohort? This will remove its candidates, shortlist entries, and mappings.');
     if (!confirmed) return;
 
+    this.loading = true;
     this.cohortService.deleteCohort(cohort.cohortId).subscribe({
       next: () => {
+        this.loading = false;
         this.showNotification(`Cohort '${cohort.cohortName}' deleted successfully.`);
-        this.loadCohorts();
+        this.loadCohorts(true);
       },
       error: (err) => {
+        this.loading = false;
         this.showNotification(`Failed to delete cohort: ${err.error?.message || 'Server error'}`, 'error');
       }
     });

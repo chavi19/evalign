@@ -14,8 +14,13 @@ export class CohortService {
 
   constructor(private http: HttpClient) {}
 
-  getCohorts(): Observable<Cohort[]> {
-    return this.http.get<Cohort[]>(this.API_URL);
+  getCohorts(filters?: { page?: number; size?: number; search?: string; status?: string }): Observable<Cohort[]> {
+    let params = new HttpParams();
+    if (filters?.page !== undefined && filters.page !== null) params = params.set('page', filters.page.toString());
+    if (filters?.size !== undefined && filters.size !== null) params = params.set('size', filters.size.toString());
+    if (filters?.search) params = params.set('search', filters.search);
+    if (filters?.status && filters.status !== 'All') params = params.set('status', filters.status);
+    return this.http.get<Cohort[]>(this.API_URL, { params });
   }
 
   getCohort(id: number | string): Observable<Cohort> {

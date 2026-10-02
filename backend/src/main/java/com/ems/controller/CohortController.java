@@ -17,8 +17,15 @@ public class CohortController {
     private CohortService cohortService;
 
     @GetMapping
-    public ResponseEntity<List<CohortDTO>> getAllCohorts() {
-        return ResponseEntity.ok(cohortService.getAllCohorts());
+    public ResponseEntity<List<CohortDTO>> getAllCohorts(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status) {
+        if (page == null && size == null && search == null && status == null) {
+            return ResponseEntity.ok(cohortService.getAllCohorts());
+        }
+        return ResponseEntity.ok(cohortService.getAllCohorts(page, size, search, status));
     }
 
     @GetMapping("/{id}")

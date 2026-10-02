@@ -31,8 +31,19 @@ public class EvaluatorController {
             @RequestParam(required = false) String domain,
             @RequestParam(required = false) String availability,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate interviewFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate interviewTo) {
-        return ResponseEntity.ok(evaluatorService.getEvaluators(vertical, domain, availability, interviewFrom, interviewTo));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate interviewTo,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (search == null && page == null && size == null) {
+            return ResponseEntity.ok(evaluatorService.getEvaluators(vertical, domain, availability, interviewFrom, interviewTo));
+        }
+        return ResponseEntity.ok(evaluatorService.getEvaluators(vertical, domain, availability, interviewFrom, interviewTo, search, page, size));
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<java.util.Map<String, Object>> getEvaluatorsSummary() {
+        return ResponseEntity.ok(evaluatorService.getEvaluatorsSummary());
     }
 
     @GetMapping("/{id}")

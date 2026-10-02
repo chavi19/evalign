@@ -62,6 +62,16 @@ export class HomeComponent implements OnInit {
     'Other'
   ];
 
+  totalEvaluatorsCount: number = 0;
+  availableEvaluatorsCount: number = 0;
+  activeCohortsCount: number = 0;
+
+  loading: boolean = false;
+  loadingMore: boolean = false;
+  hasMore: boolean = false;
+  page: number = 0;
+  pageSize: number = 15;
+
   constructor(
     private evaluatorService: EvaluatorService,
     private cohortService: CohortService
@@ -69,7 +79,8 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadFilters();
-    this.loadEvaluators();
+    this.loadSummaryMetrics();
+    this.loadEvaluators(true);
     this.loadCohorts();
   }
 
@@ -85,7 +96,17 @@ export class HomeComponent implements OnInit {
     this.evaluatorService.getDomains().subscribe(d => this.domains = d || []);
   }
 
-  loadEvaluators(): void {
+  loadSummaryMetrics(): void {
+    this.evaluatorService.getSummary().subscribe({
+      next: (summary) => {
+        this.totalEvaluatorsCount = summary.totalEvaluators || 0;
+        this.availableEvaluatorsCount = summary.availableEvaluators || 0;
+      },
+      error: (err) => console.error('Failed to load evaluator summary', err)
+    });
+  }
+
+  loadEvaluators(reset: boolean = true): void {
     // Validate date range before sending
     if (this.filters.interviewFrom && this.filters.interviewTo) {
       if (this.filters.interviewFrom > this.filters.interviewTo) {
@@ -98,20 +119,42 @@ export class HomeComponent implements OnInit {
       this.dateFilterError = '';
     }
 
+    if (reset) {
+      this.page = 0;
+      this.loading = true;
+      this.evaluators = [];
+      this.filteredEvaluators = [];
+    } else {
+      this.loadingMore = true;
+    }
+
     this.evaluatorService.getEvaluators({
       vertical: this.filters.vertical,
       domain: this.filters.domain,
       availability: this.filters.availability,
       interviewFrom: this.filters.interviewFrom || undefined,
-      interviewTo: this.filters.interviewTo || undefined
+      interviewTo: this.filters.interviewTo || undefined,
+      search: this.filters.search ? this.filters.search.trim() : undefined,
+      page: this.page,
+      size: this.pageSize
     }).subscribe({
       next: (res) => {
-        this.evaluators = res || [];
-        this.applySearchFilter();
+        const batch = res || [];
+        if (reset) {
+          this.evaluators = batch;
+        } else {
+          this.evaluators = [...this.evaluators, ...batch];
+        }
+        this.filteredEvaluators = this.evaluators;
+        this.hasMore = batch.length === this.pageSize;
+        this.loading = false;
+        this.loadingMore = false;
       },
       error: (err) => {
         console.error('Failed to load evaluators', err);
         this.showNotification(err.error?.message || 'Failed to load evaluators', 'error');
+        this.loading = false;
+        this.loadingMore = false;
       }
     });
   }
@@ -120,6 +163,7 @@ export class HomeComponent implements OnInit {
     this.cohortService.getCohorts().subscribe({
       next: (res) => {
         this.cohorts = res || [];
+        this.activeCohortsCount = this.cohorts.filter(c => (c.status || '').toUpperCase() === 'ACTIVE').length;
         if (this.cohorts.length > 0 && !this.selectedCohortId) {
           this.selectedCohortId = this.cohorts[0].cohortId;
         }
@@ -128,39 +172,18 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  get totalEvaluatorsCount(): number {
-    return this.evaluators.length;
-  }
-
-  get availableEvaluatorsCount(): number {
-    return this.evaluators.filter(e => e.availabilityStatus === 'AVAILABLE').length;
-  }
-
-  get activeCohortsCount(): number {
-    return this.cohorts.filter(c => c.status === 'ACTIVE').length;
-  }
-
-  applySearchFilter(): void {
-    let result = [...this.evaluators];
-
-    if (this.filters.search) {
-      const q = this.filters.search.toLowerCase();
-      result = result.filter(e => 
-        (e.name && e.name.toLowerCase().includes(q)) ||
-        (e.empId && e.empId.toLowerCase().includes(q)) ||
-        (e.statusReason && e.statusReason.toLowerCase().includes(q))
-      );
-    }
-
-    this.filteredEvaluators = result;
+  viewMore(): void {
+    if (!this.hasMore || this.loading || this.loadingMore) return;
+    this.page++;
+    this.loadEvaluators(false);
   }
 
   onFilterChange(): void {
-    this.loadEvaluators();
+    this.loadEvaluators(true);
   }
 
   onSearchChange(): void {
-    this.applySearchFilter();
+    this.loadEvaluators(true);
   }
 
   clearDateFilter(): void {
@@ -192,7 +215,7 @@ export class HomeComponent implements OnInit {
         evaluator.statusReason = updated.statusReason;
         evaluator.isPermanent = updated.isPermanent;
         this.showNotification(`Updated ${evaluator.name} status to ${newStatus}`);
-        this.applySearchFilter();
+        this.loadSummaryMetrics();
       },
       error: (err) => this.showNotification(err.error?.message || 'Failed to update availability', 'error')
     });

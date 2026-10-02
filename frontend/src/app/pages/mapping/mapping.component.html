@@ -146,7 +146,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of tableRows">
+          <tr *ngFor="let row of visibleRows">
             <td>
               <div class="candidate-cell">
                 <div class="candidate-avatar">
@@ -257,7 +257,7 @@
               </div>
             </td>
           </tr>
-          <tr *ngIf="tableRows.length === 0 && !loading">
+          <tr *ngIf="visibleRows.length === 0 && !loading">
             <td colspan="6" class="text-center empty-state">
               <div class="empty-state-content">
                 <span class="empty-title">No candidates enrolled in this cohort batch</span>
@@ -267,6 +267,13 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Progressive View More Section -->
+    <div class="view-more-container" *ngIf="hasMoreRows">
+      <button class="btn btn-secondary view-more-btn" (click)="viewMoreRows()" [disabled]="loading">
+        <span>View More</span>
+      </button>
     </div>
 
   </ng-container>

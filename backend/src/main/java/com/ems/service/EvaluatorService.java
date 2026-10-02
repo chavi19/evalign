@@ -23,12 +23,21 @@ public class EvaluatorService {
     @Autowired
     private ExcelUploadService excelUploadService;
 
-    public List<EvaluatorDTO> getEvaluators(String vertical, String domain, String availabilityStatus, LocalDate interviewFrom, LocalDate interviewTo) {
+    public List<EvaluatorDTO> getEvaluators(String vertical, String domain, String availabilityStatus, LocalDate interviewFrom, LocalDate interviewTo, String search, Integer page, Integer size) {
         if (interviewFrom != null && interviewTo != null && interviewFrom.isAfter(interviewTo)) {
             throw new IllegalArgumentException("Interview From Date cannot be after To Date");
         }
 
         Stream<Evaluator> stream = evaluatorRepository.findAll().stream();
+
+        if (search != null && !search.trim().isEmpty()) {
+            String q = search.trim().toLowerCase();
+            stream = stream.filter(e ->
+                (e.getName() != null && e.getName().toLowerCase().contains(q)) ||
+                (e.getEmpId() != null && e.getEmpId().toLowerCase().contains(q)) ||
+                (e.getStatusReason() != null && e.getStatusReason().toLowerCase().contains(q))
+            );
+        }
         
         if (vertical != null && !vertical.isEmpty() && !"All".equalsIgnoreCase(vertical)) {
             stream = stream.filter(e -> vertical.equalsIgnoreCase(e.getVertical()));
@@ -54,8 +63,27 @@ public class EvaluatorService {
                 stream = stream.filter(e -> availabilityStatus.equalsIgnoreCase(e.getAvailabilityStatus()));
             }
         }
+
+        if (page != null && size != null && page >= 0 && size > 0) {
+            stream = stream.skip((long) page * size).limit(size);
+        }
         
         return stream.map(this::mapToDTO).collect(Collectors.toList());
+    }
+
+    public List<EvaluatorDTO> getEvaluators(String vertical, String domain, String availabilityStatus, LocalDate interviewFrom, LocalDate interviewTo) {
+        return getEvaluators(vertical, domain, availabilityStatus, interviewFrom, interviewTo, null, null, null);
+    }
+
+    public java.util.Map<String, Object> getEvaluatorsSummary() {
+        long total = evaluatorRepository.count();
+        long available = evaluatorRepository.findAll().stream()
+                .filter(e -> "AVAILABLE".equalsIgnoreCase(e.getAvailabilityStatus()))
+                .count();
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("totalEvaluators", total);
+        map.put("availableEvaluators", available);
+        return map;
     }
 
     public boolean isAvailableForDateRange(Evaluator e, LocalDate interviewFrom, LocalDate interviewTo) {

@@ -44,6 +44,9 @@ export class MappingComponent implements OnInit {
   shortlistedEvaluators: Evaluator[] = [];
   mappings: Mapping[] = [];
   tableRows: MappingRow[] = [];
+  visibleRows: MappingRow[] = [];
+  displayLimit: number = 20;
+  hasMoreRows: boolean = false;
   
   notification: { message: string; type: 'success' | 'error' | 'warning' } | null = null;
   loading: boolean = false;
@@ -217,6 +220,18 @@ export class MappingComponent implements OnInit {
     }
 
     this.tableRows = rows;
+    this.displayLimit = 20;
+    this.updateVisibleRows();
+  }
+
+  updateVisibleRows(): void {
+    this.visibleRows = this.tableRows.slice(0, this.displayLimit);
+    this.hasMoreRows = this.tableRows.length > this.displayLimit;
+  }
+
+  viewMoreRows(): void {
+    this.displayLimit += 20;
+    this.updateVisibleRows();
   }
 
   autoMap(): void {

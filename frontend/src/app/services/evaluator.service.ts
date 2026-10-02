@@ -18,6 +18,9 @@ export class EvaluatorService {
     availability?: string;
     interviewFrom?: string;
     interviewTo?: string;
+    search?: string;
+    page?: number;
+    size?: number;
   }): Observable<Evaluator[]> {
     let params = new HttpParams();
     if (filters?.vertical && filters.vertical !== 'All') {
@@ -35,7 +38,20 @@ export class EvaluatorService {
     if (filters?.interviewTo) {
       params = params.set('interviewTo', filters.interviewTo);
     }
+    if (filters?.search) {
+      params = params.set('search', filters.search);
+    }
+    if (filters?.page !== undefined && filters.page !== null) {
+      params = params.set('page', filters.page.toString());
+    }
+    if (filters?.size !== undefined && filters.size !== null) {
+      params = params.set('size', filters.size.toString());
+    }
     return this.http.get<Evaluator[]>(this.API_URL, { params });
+  }
+
+  getSummary(): Observable<{ totalEvaluators: number; availableEvaluators: number }> {
+    return this.http.get<{ totalEvaluators: number; availableEvaluators: number }>(`${this.API_URL}/summary`);
   }
 
   getEvaluatorById(id: number | string): Observable<Evaluator> {

@@ -35,8 +35,34 @@ public class CohortService {
     @Autowired
     private EvaluatorShortlistRepository shortlistRepository;
 
+    public List<CohortDTO> getAllCohorts(Integer page, Integer size, String search, String status) {
+        java.util.stream.Stream<Cohort> stream = cohortRepository.findAll().stream();
+
+        if (search != null && !search.trim().isEmpty()) {
+            String q = search.trim().toLowerCase();
+            stream = stream.filter(c ->
+                (c.getCohortName() != null && c.getCohortName().toLowerCase().contains(q)) ||
+                (c.getBatchCode() != null && c.getBatchCode().toLowerCase().contains(q))
+            );
+        }
+
+        if (status != null && !status.trim().isEmpty() && !"All".equalsIgnoreCase(status)) {
+            String s = status.trim().toLowerCase().replace('_', ' ');
+            stream = stream.filter(c -> {
+                String cs = (c.getStatus() != null ? c.getStatus() : "").trim().toLowerCase().replace('_', ' ');
+                return cs.equalsIgnoreCase(s) || (s.equals("active") && cs.contains("active")) || (s.contains("progress") && cs.contains("progress"));
+            });
+        }
+
+        if (page != null && size != null && page >= 0 && size > 0) {
+            stream = stream.skip((long) page * size).limit(size);
+        }
+
+        return stream.map(this::mapToDTO).collect(Collectors.toList());
+    }
+
     public List<CohortDTO> getAllCohorts() {
-        return cohortRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
+        return getAllCohorts(null, null, null, null);
     }
     
     public CohortDTO getCohortById(Long id) {
